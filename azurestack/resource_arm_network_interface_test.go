@@ -818,7 +818,7 @@ resource "azurestack_public_ip" "testext" {
   name                         = "acctestpip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "testext" {
@@ -854,7 +854,7 @@ resource "azurestack_public_ip" "testint" {
   name                         = "testpublicipint"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "testint" {
@@ -957,7 +957,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctest-pubip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "dynamic"
+  allocation_method            = "dynamic"
 }
 
 resource "azurestack_application_gateway" "test" {
@@ -1086,7 +1086,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctest-%d-pip"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
 
   tags = {
     environment = "Production"

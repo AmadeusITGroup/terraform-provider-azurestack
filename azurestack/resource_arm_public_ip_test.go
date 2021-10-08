@@ -59,7 +59,7 @@ func TestAccAzureStackPublicIpStatic_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureStackPublicIpExists(resourceName),
 					resource.TestCheckResourceAttrSet(resourceName, "ip_address"),
-					resource.TestCheckResourceAttr(resourceName, "public_ip_address_allocation", "static"),
+					resource.TestCheckResourceAttr(resourceName, "allocation_method", "static"),
 				),
 			},
 			{
@@ -361,7 +361,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpublicip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 `, rInt, location, rInt)
 }
@@ -377,7 +377,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpublicip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
   sku                          = "standard"
 }
 `, rInt, location, rInt)
@@ -394,7 +394,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpublicip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
   domain_name_label            = "acctest-%d"
 }
 `, rInt, location, rInt, rInt)
@@ -411,7 +411,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpublicip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
   idle_timeout_in_minutes      = 30
 }
 `, rInt, location, rInt)
@@ -428,7 +428,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpublicip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "dynamic"
+  allocation_method            = "dynamic"
 }
 `, rInt, location, rInt)
 }
@@ -444,7 +444,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpublicip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 
   tags = {
     environment = "Production"
@@ -465,7 +465,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpublicip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 
   tags = {
     environment = "staging"

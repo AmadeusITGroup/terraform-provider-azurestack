@@ -58,6 +58,18 @@ func resourceArmPublicIp() *schema.Resource {
 					string(network.Dynamic),
 					string(network.Static),
 				}, true),
+				Deprecated: "Removed function",
+			},
+
+			"allocation_method": {
+				Type:             schema.TypeString,
+				Required:         true,
+				StateFunc:        ignoreCaseStateFunc,
+				DiffSuppressFunc: suppress.CaseDifference,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(network.Dynamic),
+					string(network.Static),
+				}, true),
 			},
 
 			"idle_timeout_in_minutes": {
@@ -131,14 +143,22 @@ func resourceArmPublicIpCreate(d *schema.ResourceData, meta interface{}) error {
 	// 	}
 	// }
 
-	ipAllocationMethod := d.Get("public_ip_address_allocation").(string)
+	ipAllocationMethod, ipAllocationMethodSet := d.GetOk("allocation_method")
+	if !ipAllocationMethodSet {
+		ipPublicAllocationMethod, ipAllocationMethodSet := d.GetOk("public_ip_address_allocation")
+		if !ipAllocationMethodSet {
+			ipAllocationMethod = ipPublicAllocationMethod
+		}
+	}
+	ipAllocationMethodStr := ipAllocationMethod.(string)
+
 	idleTimeout := d.Get("idle_timeout_in_minutes").(int)
 
 	publicIp := network.PublicIPAddress{
 		Name:     &name,
 		Location: &location,
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			PublicIPAllocationMethod: network.IPAllocationMethod(ipAllocationMethod),
+			PublicIPAllocationMethod: network.IPAllocationMethod(ipAllocationMethodStr),
 			IdleTimeoutInMinutes:     utils.Int32(int32(idleTimeout)),
 		},
 		Tags: *expandTags(tags),
@@ -215,7 +235,7 @@ func resourceArmPublicIpRead(d *schema.ResourceData, meta interface{}) error {
 		d.Set("location", azureStackNormalizeLocation(*location))
 	}
 
-	d.Set("public_ip_address_allocation", strings.ToLower(string(resp.PublicIPAddressPropertiesFormat.PublicIPAllocationMethod)))
+	d.Set("allocation_method", strings.ToLower(string(resp.PublicIPAddressPropertiesFormat.PublicIPAllocationMethod)))
 
 	// if sku := resp.Sku; sku != nil {
 	// 	d.Set("sku", string(sku.Name))
@@ -223,7 +243,7 @@ func resourceArmPublicIpRead(d *schema.ResourceData, meta interface{}) error {
 	// d.Set("zones", resp.Zones)
 
 	if props := resp.PublicIPAddressPropertiesFormat; props != nil {
-		d.Set("public_ip_address_allocation", strings.ToLower(string(props.PublicIPAllocationMethod)))
+		d.Set("allocation_method", strings.ToLower(string(props.PublicIPAllocationMethod)))
 
 		if settings := props.DNSSettings; settings != nil {
 			d.Set("fqdn", settings.Fqdn)

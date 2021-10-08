@@ -119,6 +119,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_virtual_machine_scale_set":                 resourceArmVirtualMachineScaleSet(),
 			"azurestack_dns_cname_record":                          resourceArmDnsCNameRecord(),
 			"azurestack_subnet_network_security_group_association": resourceArmSubnetNetworkSecurityGroupAssociation(),
+			"azurestack_virtual_network_peering":                   resourceArmVirtualNetworkPeering(), // NBO ADDED
 		},
 	}
 

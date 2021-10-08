@@ -74,6 +74,7 @@ type ArmClient struct {
 	loadBalancerClient network.LoadBalancersClient
 	routesClient       network.RoutesClient
 	routeTablesClient  network.RouteTablesClient
+	vnetPeeringClient  network.VirtualNetworkPeeringsClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -249,6 +250,10 @@ func (c *ArmClient) registerNetworkingClients(endpoint, subscriptionId string, a
 	routesClient := network.NewRoutesClientWithBaseURI(endpoint, subscriptionId)
 	c.configureClient(&routesClient.Client, auth)
 	c.routesClient = routesClient
+
+	peeringCLient := network.NewVirtualNetworkPeeringsClientWithBaseURI(endpoint, subscriptionId)
+	c.configureClient(&peeringCLient.Client, auth)
+	c.vnetPeeringClient = peeringCLient
 }
 
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionId string, auth autorest.Authorizer) {

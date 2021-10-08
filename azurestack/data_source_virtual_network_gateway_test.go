@@ -52,7 +52,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
 }
 
 resource "azurestack_virtual_network_gateway" "test" {

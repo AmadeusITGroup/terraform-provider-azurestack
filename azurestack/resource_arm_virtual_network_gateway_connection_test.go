@@ -203,7 +203,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctest-${var.random}"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
 }
 
 resource "azurestack_virtual_network_gateway" "test" {
@@ -283,7 +283,7 @@ resource "azurestack_public_ip" "test_1" {
   name                         = "acctest-${var.random1}"
   location                     = "${azurestack_resource_group.test_1.location}"
   resource_group_name          = "${azurestack_resource_group.test_1.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
 }
 
 resource "azurestack_virtual_network_gateway" "test_1" {
@@ -338,7 +338,7 @@ resource "azurestack_public_ip" "test_2" {
   name                         = "acctest-${var.random2}"
   location                     = "${azurestack_resource_group.test_2.location}"
   resource_group_name          = "${azurestack_resource_group.test_2.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
 }
 
 resource "azurestack_virtual_network_gateway" "test_2" {
@@ -401,7 +401,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctest-${var.random}"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
 }
 
 resource "azurestack_virtual_network_gateway" "test" {

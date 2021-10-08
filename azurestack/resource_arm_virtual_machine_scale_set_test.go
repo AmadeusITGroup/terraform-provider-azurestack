@@ -1821,7 +1821,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpip-%[1]d"
   resource_group_name          = "${azurestack_resource_group.test.name}"
   location                     = "${azurestack_resource_group.test.location}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {
@@ -1938,7 +1938,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpip-%[1]d"
   resource_group_name          = "${azurestack_resource_group.test.name}"
   location                     = "${azurestack_resource_group.test.location}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {
@@ -2059,7 +2059,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctestpip-%[1]d"
   resource_group_name          = "${azurestack_resource_group.test.name}"
   location                     = "${azurestack_resource_group.test.location}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {
@@ -2444,7 +2444,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctest-pubip-%[1]d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "dynamic"
+  allocation_method            = "dynamic"
 }
 
 resource "azurestack_application_gateway" "test" {
@@ -3512,7 +3512,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctpip-%[1]d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
   domain_name_label            = "%[3]s"
 }
 
@@ -3766,7 +3766,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "acctpip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "Dynamic"
+  allocation_method            = "Dynamic"
   domain_name_label            = "%s"
 }
 

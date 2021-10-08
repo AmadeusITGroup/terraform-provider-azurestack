@@ -56,73 +56,69 @@ func resourceArmNetworkSecurityRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 
-				// Since this is not supported it will not conflict
-				// ConflictsWith: []string{"source_port_ranges"},
+				// NBO
+				ConflictsWith: []string{"source_port_ranges"},
 			},
 
-			// The following fields are not supported by the profile 2017-03-09
-			// source_port_ranges
-			// destination_port_ranges
-			// source_address_prefixes
-			// destination_address_prefixes
+			// The following fields are not supported by the profile 2017-10-01
 			// source_application_security_group_ids
 			// destination_application_security_group_ids
 
-			// "source_port_ranges": {
-			// 	Type:          schema.TypeSet,
-			// 	Optional:      true,
-			// 	Elem:          &schema.Schema{Type: schema.TypeString},
-			// 	Set:           schema.HashString,
-			// 	ConflictsWith: []string{"source_port_range"},
-			// },
+			"source_port_ranges": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				Set:           schema.HashString,
+				ConflictsWith: []string{"source_port_range"},
+			},
 
 			"destination_port_range": {
 				Type:     schema.TypeString,
 				Optional: true,
 
-				// Since this is not supported it will not conflict
-				// ConflictsWith: []string{"destination_port_ranges"},
+				// NBO
+				ConflictsWith: []string{"destination_port_ranges"},
 			},
 
-			// "destination_port_ranges": {
-			// 	Type:          schema.TypeSet,
-			// 	Optional:      true,
-			// 	Elem:          &schema.Schema{Type: schema.TypeString},
-			// 	Set:           schema.HashString,
-			// 	ConflictsWith: []string{"destination_port_range"},
-			// },
+			"destination_port_ranges": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				Set:           schema.HashString,
+				ConflictsWith: []string{"destination_port_range"},
+			},
 
 			"source_address_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 
-				// Since this is not supported it will not conflict
-				// ConflictsWith: []string{"source_address_prefixes"},
+				// NBO
+				ConflictsWith: []string{"source_address_prefixes"},
 			},
 
-			// "source_address_prefixes": {
-			// 	Type:          schema.TypeSet,
-			// 	Optional:      true,
-			// 	Elem:          &schema.Schema{Type: schema.TypeString},
-			// 	Set:           schema.HashString,
-			// 	ConflictsWith: []string{"source_address_prefix"},
-			// },
+			"source_address_prefixes": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				Set:           schema.HashString,
+				ConflictsWith: []string{"source_address_prefix"},
+			},
 
 			"destination_address_prefix": {
 				Type:     schema.TypeString,
 				Optional: true,
 
-				// Since this is not supported it will not conflict
-				// ConflictsWith: []string{"destination_address_prefixes"},
+				// NBO
+				ConflictsWith: []string{"destination_address_prefixes"},
 			},
 
-			// "destination_address_prefixes": {
-			// 	Type:          schema.TypeSet,
-			// 	Optional:      true,
-			// 	Elem:          &schema.Schema{Type: schema.TypeString},
-			// 	Set:           schema.HashString,
-			// 	ConflictsWith: []string{"destination_address_prefix"},
-			// },
+			"destination_address_prefixes": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				Set:           schema.HashString,
+				ConflictsWith: []string{"destination_address_prefix"},
+			},
 
 			"source_application_security_group_ids": {
 				Type:     schema.TypeSet,
@@ -208,53 +204,50 @@ func resourceArmNetworkSecurityRuleCreate(d *schema.ResourceData, meta interface
 		rule.SecurityRulePropertiesFormat.Description = &description
 	}
 
-	// The following fields are not supported by the profile 2017-03-09
-	// source_port_ranges
-	// destination_port_ranges
-	// source_address_prefixes
-	// destination_address_prefixes
+	// The following fields are not supported by the profile 2017-10-01
+	// NBO
 	// source_application_security_group_ids
 	// destination_application_security_group_ids
 
-	// if r, ok := d.GetOk("source_port_ranges"); ok {
-	// 	var sourcePortRanges []string
-	// 	r := r.(*schema.Set).List()
-	// 	for _, v := range r {
-	// 		s := v.(string)
-	// 		sourcePortRanges = append(sourcePortRanges, s)
-	// 	}
-	// 	rule.SecurityRulePropertiesFormat.SourcePortRanges = &sourcePortRanges
-	// }
+	if r, ok := d.GetOk("source_port_ranges"); ok {
+		var sourcePortRanges []string
+		r := r.(*schema.Set).List()
+		for _, v := range r {
+			s := v.(string)
+			sourcePortRanges = append(sourcePortRanges, s)
+		}
+		rule.SecurityRulePropertiesFormat.SourcePortRanges = &sourcePortRanges
+	}
 
-	// if r, ok := d.GetOk("destination_port_ranges"); ok {
-	// 	var destinationPortRanges []string
-	// 	r := r.(*schema.Set).List()
-	// 	for _, v := range r {
-	// 		s := v.(string)
-	// 		destinationPortRanges = append(destinationPortRanges, s)
-	// 	}
-	// 	rule.SecurityRulePropertiesFormat.DestinationPortRanges = &destinationPortRanges
-	// }
+	if r, ok := d.GetOk("destination_port_ranges"); ok {
+		var destinationPortRanges []string
+		r := r.(*schema.Set).List()
+		for _, v := range r {
+			s := v.(string)
+			destinationPortRanges = append(destinationPortRanges, s)
+		}
+		rule.SecurityRulePropertiesFormat.DestinationPortRanges = &destinationPortRanges
+	}
 
-	// if r, ok := d.GetOk("source_address_prefixes"); ok {
-	// 	var sourceAddressPrefixes []string
-	// 	r := r.(*schema.Set).List()
-	// 	for _, v := range r {
-	// 		s := v.(string)
-	// 		sourceAddressPrefixes = append(sourceAddressPrefixes, s)
-	// 	}
-	// 	rule.SecurityRulePropertiesFormat.SourceAddressPrefixes = &sourceAddressPrefixes
-	// }
+	if r, ok := d.GetOk("source_address_prefixes"); ok {
+		var sourceAddressPrefixes []string
+		r := r.(*schema.Set).List()
+		for _, v := range r {
+			s := v.(string)
+			sourceAddressPrefixes = append(sourceAddressPrefixes, s)
+		}
+		rule.SecurityRulePropertiesFormat.SourceAddressPrefixes = &sourceAddressPrefixes
+	}
 
-	// if r, ok := d.GetOk("destination_address_prefixes"); ok {
-	// 	var destinationAddressPrefixes []string
-	// 	r := r.(*schema.Set).List()
-	// 	for _, v := range r {
-	// 		s := v.(string)
-	// 		destinationAddressPrefixes = append(destinationAddressPrefixes, s)
-	// 	}
-	// 	rule.SecurityRulePropertiesFormat.DestinationAddressPrefixes = &destinationAddressPrefixes
-	// }
+	if r, ok := d.GetOk("destination_address_prefixes"); ok {
+		var destinationAddressPrefixes []string
+		r := r.(*schema.Set).List()
+		for _, v := range r {
+			s := v.(string)
+			destinationAddressPrefixes = append(destinationAddressPrefixes, s)
+		}
+		rule.SecurityRulePropertiesFormat.DestinationAddressPrefixes = &destinationAddressPrefixes
+	}
 
 	// if r, ok := d.GetOk("source_application_security_group_ids"); ok {
 	// 	var sourceApplicationSecurityGroups []network.ApplicationSecurityGroup
@@ -338,10 +331,10 @@ func resourceArmNetworkSecurityRuleRead(d *schema.ResourceData, meta interface{}
 		d.Set("direction", string(props.Direction))
 
 		// The following fields are not supported by the profile 2017-03-09
-		// d.Set("destination_port_ranges", props.DestinationPortRanges)
-		// d.Set("destination_address_prefixes", props.DestinationAddressPrefixes)
-		// d.Set("source_address_prefixes", props.SourceAddressPrefixes)
-		// d.Set("source_port_ranges", props.SourcePortRanges)
+		d.Set("destination_port_ranges", props.DestinationPortRanges)
+		d.Set("destination_address_prefixes", props.DestinationAddressPrefixes)
+		d.Set("source_address_prefixes", props.SourceAddressPrefixes)
+		d.Set("source_port_ranges", props.SourcePortRanges)
 	}
 
 	return nil
