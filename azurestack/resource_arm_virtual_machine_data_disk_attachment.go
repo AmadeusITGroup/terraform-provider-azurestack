@@ -3,6 +3,7 @@ package azurestack
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -15,7 +16,7 @@ import (
 	localAzure "github.com/terraform-providers/terraform-provider-azurestack/azurestack/helpers/azure"
 )
 
-func resourceVirtualMachineDataDiskAttachment() *schema.Resource {
+func resourceArmVirtualMachineDataDiskAttachment() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceVirtualMachineDataDiskAttachmentCreateUpdate,
 		Read:   resourceVirtualMachineDataDiskAttachmentRead,
@@ -23,6 +24,13 @@ func resourceVirtualMachineDataDiskAttachment() *schema.Resource {
 		Delete: resourceVirtualMachineDataDiskAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -82,7 +90,8 @@ func resourceVirtualMachineDataDiskAttachment() *schema.Resource {
 
 func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).vmClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	parsedVirtualMachineId, err := localAzure.VirtualMachineID(d.Get("virtual_machine_id").(string))
 	if err != nil {
@@ -176,7 +185,8 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 
 func resourceVirtualMachineDataDiskAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).vmClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := localAzure.DataDiskID(d.Id())
 	if err != nil {
@@ -231,7 +241,8 @@ func resourceVirtualMachineDataDiskAttachmentRead(d *schema.ResourceData, meta i
 
 func resourceVirtualMachineDataDiskAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).vmClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := localAzure.DataDiskID(d.Id())
 	if err != nil {
@@ -276,7 +287,8 @@ func resourceVirtualMachineDataDiskAttachmentDelete(d *schema.ResourceData, meta
 
 func retrieveDataDiskAttachmentManagedDisk(d *schema.ResourceData, meta interface{}, id string) (*compute.Disk, error) {
 	client := meta.(*ArmClient).diskClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	parsedId, err := localAzure.ManagedDiskID(id)
 	if err != nil {

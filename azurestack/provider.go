@@ -95,6 +95,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_network_interface":                                  resourceArmNetworkInterface(),
 			"azurestack_network_security_group":                             resourceArmNetworkSecurityGroup(),
 			"azurestack_network_security_rule":                              resourceArmNetworkSecurityRule(),
+			"azurestack_network_interface_backend_address_pool_association": resourceArmNetworkInterfaceBackendAddressPoolAssociation(),
 			"azurestack_local_network_gateway":                              resourceArmLocalNetworkGateway(),
 			"azurestack_lb":                                                 resourceArmLoadBalancer(),
 			"azurestack_lb_backend_address_pool":                            resourceArmLoadBalancerBackendAddressPool(),
@@ -116,13 +117,12 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_virtual_network_gateway":                            resourceArmVirtualNetworkGateway(),
 			"azurestack_virtual_machine":                                    resourceArmVirtualMachine(),
 			"azurestack_virtual_machine_extension":                          resourceArmVirtualMachineExtensions(),
+			"azurestack_virtual_machine_data_disk_attachment":               resourceArmVirtualMachineDataDiskAttachment(),
 			"azurestack_virtual_network_gateway_connection":                 resourceArmVirtualNetworkGatewayConnection(),
 			"azurestack_virtual_machine_scale_set":                          resourceArmVirtualMachineScaleSet(),
 			"azurestack_dns_cname_record":                                   resourceArmDnsCNameRecord(),
 			"azurestack_subnet_network_security_group_association":          resourceArmSubnetNetworkSecurityGroupAssociation(),
 			"azurestack_virtual_network_peering":                            resourceArmVirtualNetworkPeering(), // NBO ADDED
-			"azurestack_network_interface_backend_address_pool_association": resourceNetworkInterfaceBackendAddressPoolAssociation(),
-			"azurestack_virtual_machine_data_disk_attachment":               resourceVirtualMachineDataDiskAttachment(),
 		},
 	}
 

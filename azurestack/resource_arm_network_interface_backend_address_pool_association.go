@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -15,13 +16,20 @@ import (
 	localAzure "github.com/terraform-providers/terraform-provider-azurestack/azurestack/helpers/azure"
 )
 
-func resourceNetworkInterfaceBackendAddressPoolAssociation() *schema.Resource {
+func resourceArmNetworkInterfaceBackendAddressPoolAssociation() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceNetworkInterfaceBackendAddressPoolAssociationCreate,
 		Read:   resourceNetworkInterfaceBackendAddressPoolAssociationRead,
 		Delete: resourceNetworkInterfaceBackendAddressPoolAssociationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -51,7 +59,8 @@ func resourceNetworkInterfaceBackendAddressPoolAssociation() *schema.Resource {
 
 func resourceNetworkInterfaceBackendAddressPoolAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).ifaceClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	log.Printf("[INFO] preparing arguments for Network Interface <-> Load Balancer Backend Address Pool Association creation.")
 
@@ -59,43 +68,40 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationCreate(d *schema.Resou
 	ipConfigurationName := d.Get("ip_configuration_name").(string)
 	backendAddressPoolId := d.Get("backend_address_pool_id").(string)
 
-	properties := network.InterfacePropertiesFormat{
-		Primary: utils.Bool(true),
-	}
-
-	id, err := localAzure.NetworkInterfaceID(*properties.ResourceGUID)
+	nicId, err := parseAzureResourceID(networkInterfaceId)
 	if err != nil {
 		return err
 	}
+	networkInterfaceName := nicId.Path["networkInterfaces"]
 
-	read, err := client.Get(ctx, id.ResourceGroup, id.Name, "")
+	read, err := client.Get(ctx, nicId.ResourceGroup, networkInterfaceName, "")
 	if err != nil {
 		if utils.ResponseWasNotFound(read.Response) {
-			return fmt.Errorf("%s was not found!", *id)
+			return fmt.Errorf("%s was not found!", *nicId)
 		}
 
-		return fmt.Errorf("retrieving %s: %+v", *id, err)
+		return fmt.Errorf("retrieving %s: %+v", *nicId, err)
 	}
 
 	props := read.InterfacePropertiesFormat
 	if props == nil {
-		return fmt.Errorf("Error: `properties` was nil for %s", *id)
+		return fmt.Errorf("Error: `properties` was nil for %s", *nicId)
 	}
 
 	ipConfigs := props.IPConfigurations
 	if ipConfigs == nil {
-		return fmt.Errorf("Error: `properties.IPConfigurations` was nil for %s", *id)
+		return fmt.Errorf("Error: `properties.IPConfigurations` was nil for %s", *nicId)
 	}
 
 	c := localAzure.FindNetworkInterfaceIPConfiguration(props.IPConfigurations, ipConfigurationName)
 	if c == nil {
-		return fmt.Errorf("Error: IP Configuration %q was not found on %s", ipConfigurationName, *id)
+		return fmt.Errorf("Error: IP Configuration %q was not found on %s", ipConfigurationName, *nicId)
 	}
 
 	config := *c
 	p := config.InterfaceIPConfigurationPropertiesFormat
 	if p == nil {
-		return fmt.Errorf("Error: `IPConfiguration.properties` was nil for %s", *id)
+		return fmt.Errorf("Error: `IPConfiguration.properties` was nil for %s", *nicId)
 	}
 
 	pools := make([]network.BackendAddressPool, 0)
@@ -122,13 +128,13 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationCreate(d *schema.Resou
 
 	props.IPConfigurations = localAzure.UpdateNetworkInterfaceIPConfiguration(config, props.IPConfigurations)
 
-	future, err := client.CreateOrUpdate(ctx, id.ResourceGroup, id.Name, read)
+	future, err := client.CreateOrUpdate(ctx, nicId.ResourceGroup, networkInterfaceName, read)
 	if err != nil {
-		return fmt.Errorf("updating Backend Address Pool Association for %s: %+v", *id, err)
+		return fmt.Errorf("updating Backend Address Pool Association for %s: %+v", *nicId, err)
 	}
 
 	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for completion of Backend Address Pool Association for %s: %+v", *id, err)
+		return fmt.Errorf("waiting for completion of Backend Address Pool Association for %s: %+v", *nicId, err)
 	}
 
 	d.SetId(resourceId)
@@ -138,7 +144,8 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationCreate(d *schema.Resou
 
 func resourceNetworkInterfaceBackendAddressPoolAssociationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).ifaceClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	splitId := strings.Split(d.Id(), "|")
 	if len(splitId) != 2 {
@@ -212,7 +219,8 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationRead(d *schema.Resourc
 
 func resourceNetworkInterfaceBackendAddressPoolAssociationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).ifaceClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	splitId := strings.Split(d.Id(), "|")
 	if len(splitId) != 2 {

@@ -2,6 +2,7 @@ package azurestack
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -11,6 +12,17 @@ import (
 func dataSourceArmDnsZone() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceArmDnsZoneRead,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:         schema.TypeString,
@@ -37,7 +49,8 @@ func dataSourceArmDnsZone() *schema.Resource {
 
 func dataSourceArmDnsZoneRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).zonesClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	resGroup := d.Get("resource_group_name").(string)
 	name := d.Get("name").(string)
