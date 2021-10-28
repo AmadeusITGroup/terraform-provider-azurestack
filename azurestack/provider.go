@@ -84,6 +84,8 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_subnet":                  dataSourceArmSubnet(),
 			"azurestack_virtual_network_gateway": dataSourceArmVirtualNetworkGateway(),
 			"azurestack_storage_account_sas":     dataSourceArmStorageAccountSharedAccessSignature(),
+			"azurestack_subscription":            dataSourceArmSubscription(),
+			"azurestack_subscriptions":           dataSourceArmSubscriptions(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
