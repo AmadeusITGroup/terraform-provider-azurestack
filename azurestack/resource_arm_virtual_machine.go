@@ -913,11 +913,9 @@ func flattenAzureStackVirtualMachineImageReference(image *compute.ImageReference
 	if image.Version != nil {
 		result["version"] = *image.Version
 	}
-
-	// Image ID not in struct
-	// if image.ID != nil {
-	// 	result["id"] = *image.ID
-	// }
+	if image.ID != nil {
+		result["id"] = *image.ID
+	}
 
 	return []interface{}{result}
 }

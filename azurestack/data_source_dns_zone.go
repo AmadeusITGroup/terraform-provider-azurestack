@@ -1,0 +1,61 @@
+package azurestack
+
+import (
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+)
+
+func dataSourceArmDnsZone() *schema.Resource {
+	return &schema.Resource{
+		Read: dataSourceArmDnsZoneRead,
+		Schema: map[string]*schema.Schema{
+			"name": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validation.NoZeroValues,
+			},
+
+			"resource_group_name": resourceGroupNameForDataSourceSchema(),
+
+			"number_of_record_sets": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
+			"max_number_of_record_sets": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+
+			"tags": tagsSchema(),
+		},
+	}
+}
+
+func dataSourceArmDnsZoneRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*ArmClient).zonesClient
+	ctx := meta.(*ArmClient).StopContext
+
+	resGroup := d.Get("resource_group_name").(string)
+	name := d.Get("name").(string)
+
+	resp, err := client.Get(ctx, resGroup, name)
+	if err != nil {
+		if utils.ResponseWasNotFound(resp.Response) {
+			return fmt.Errorf("Error: DNS Zone %q (Resource Group %q) was not found", name, resGroup)
+		}
+		return fmt.Errorf("Error making Read request on Azure dns zone %s: %s", name, err)
+	}
+
+	d.SetId(*resp.ID)
+	d.Set("name", resp.Name)
+	d.Set("number_of_record_sets", resp.NumberOfRecordSets)
+	d.Set("max_number_of_record_sets", resp.MaxNumberOfRecordSets)
+	d.Set("name_servers", resp.NameServers)
+
+	flattenAndSetTags(d, &resp.Tags)
+	return nil
+}
