@@ -230,6 +230,12 @@ func resourceArmVirtualMachine() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: validateDiskSizeGB,
 						},
+
+						"write_accelerator_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
 					},
 				},
 			},
@@ -294,6 +300,12 @@ func resourceArmVirtualMachine() *schema.Resource {
 						"lun": {
 							Type:     schema.TypeInt,
 							Required: true,
+						},
+
+						"write_accelerator_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
 						},
 					},
 				},
