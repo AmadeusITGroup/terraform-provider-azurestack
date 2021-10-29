@@ -12,8 +12,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-
-	localAzure "github.com/terraform-providers/terraform-provider-azurestack/azurestack/helpers/azure"
 )
 
 func resourceArmVirtualMachineDataDiskAttachment() *schema.Resource {
@@ -93,14 +91,16 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
 	defer cancel()
 
-	parsedVirtualMachineId, err := parseAzureResourceID(d.Get("virtual_machine_id").(string))
-
-	//parsedVirtualMachineId, err := localAzure.VirtualMachineID(d.Get("virtual_machine_id").(string))
+	virtualMachineId := d.Get("virtual_machine_id").(string)
+	parsedVirtualMachineId, err := azure.ParseAzureResourceID(virtualMachineId)
 	if err != nil {
-		return fmt.Errorf("parsing Virtual Machine ID %q: %+v", *parsedVirtualMachineId, err)
+		return fmt.Errorf("parsing Virtual Machine ID %q: %+v", parsedVirtualMachineId, err)
 	}
 
-	virtualMachine, err := client.Get(ctx, parsedVirtualMachineId.ResourceGroup, parsedVirtualMachineId.Path["virtualMachines"], "")
+	resourceGroup := parsedVirtualMachineId.ResourceGroup
+	virtualMachineName := parsedVirtualMachineId.Path["virtualMachines"]
+
+	virtualMachine, err := client.Get(ctx, resourceGroup, virtualMachineName, "")
 	if err != nil {
 		if utils.ResponseWasNotFound(virtualMachine.Response) {
 			return fmt.Errorf("Virtual Machine %q  was not found", *parsedVirtualMachineId)
@@ -190,20 +190,24 @@ func resourceVirtualMachineDataDiskAttachmentRead(d *schema.ResourceData, meta i
 	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
 	defer cancel()
 
-	id, err := localAzure.DataDiskID(d.Id())
+	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return err
 	}
 
-	virtualMachine, err := client.Get(ctx, id.ResourceGroup, id.VirtualMachineName, "")
+	resourceGroup := id.ResourceGroup
+	virtualMachineName := id.Path["virtualMachines"]
+	name := id.Path["dataDisks"]
+
+	virtualMachine, err := client.Get(ctx, resourceGroup, virtualMachineName, "")
 	if err != nil {
 		if utils.ResponseWasNotFound(virtualMachine.Response) {
-			log.Printf("[DEBUG] Virtual Machine %q was not found (Resource Group %q) therefore Data Disk Attachment cannot exist - removing from state", id.VirtualMachineName, id.ResourceGroup)
+			log.Printf("[DEBUG] Virtual Machine %q was not found (Resource Group %q) therefore Data Disk Attachment cannot exist - removing from state", virtualMachineName, resourceGroup)
 			d.SetId("")
 			return nil
 		}
 
-		return fmt.Errorf("loading Virtual Machine %q : %+v", id.String(), err)
+		return fmt.Errorf("Error loading Virtual Machine %q (Resource Group %q): %+v", virtualMachineName, resourceGroup, err)
 	}
 
 	var disk *compute.DataDisk
@@ -211,7 +215,7 @@ func resourceVirtualMachineDataDiskAttachmentRead(d *schema.ResourceData, meta i
 		if dataDisks := profile.DataDisks; dataDisks != nil {
 			for _, dataDisk := range *dataDisks {
 				// since this field isn't (and shouldn't be) case-sensitive; we're deliberately not using `strings.EqualFold`
-				if *dataDisk.Name == id.Name {
+				if *dataDisk.Name == name {
 					disk = &dataDisk
 					break
 				}
@@ -220,7 +224,7 @@ func resourceVirtualMachineDataDiskAttachmentRead(d *schema.ResourceData, meta i
 	}
 
 	if disk == nil {
-		log.Printf("[DEBUG] Data Disk %q was not found on Virtual Machine %q  - removing from state", id.Name, id.String())
+		log.Printf("[DEBUG] Data Disk %q was not found on Virtual Machine %q (Resource Group %q) - removing from state", name, virtualMachineName, resourceGroup)
 		d.SetId("")
 		return nil
 	}
@@ -228,7 +232,6 @@ func resourceVirtualMachineDataDiskAttachmentRead(d *schema.ResourceData, meta i
 	d.Set("virtual_machine_id", virtualMachine.ID)
 	d.Set("caching", string(disk.Caching))
 	d.Set("create_option", string(disk.CreateOption))
-	d.Set("write_accelerator_enabled", disk.WriteAcceleratorEnabled)
 
 	if managedDisk := disk.ManagedDisk; managedDisk != nil {
 		d.Set("managed_disk_id", managedDisk.ID)
@@ -246,24 +249,28 @@ func resourceVirtualMachineDataDiskAttachmentDelete(d *schema.ResourceData, meta
 	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
 	defer cancel()
 
-	id, err := localAzure.DataDiskID(d.Id())
+	id, err := azure.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return err
 	}
 
-	virtualMachine, err := client.Get(ctx, id.ResourceGroup, id.VirtualMachineName, "")
+	resourceGroup := id.ResourceGroup
+	virtualMachineName := id.Path["virtualMachines"]
+	name := id.Path["dataDisks"]
+
+	virtualMachine, err := client.Get(ctx, resourceGroup, virtualMachineName, "")
 	if err != nil {
 		if utils.ResponseWasNotFound(virtualMachine.Response) {
-			return fmt.Errorf("Virtual Machine %q was not found", id.String())
+			return fmt.Errorf("Virtual Machine %q (Resource Group %q) was not found", virtualMachineName, resourceGroup)
 		}
 
-		return fmt.Errorf("loading Virtual Machine %q : %+v", id.String(), err)
+		return fmt.Errorf("Error loading Virtual Machine %q (Resource Group %q): %+v", virtualMachineName, resourceGroup, err)
 	}
 
 	dataDisks := make([]compute.DataDisk, 0)
 	for _, dataDisk := range *virtualMachine.StorageProfile.DataDisks {
 		// since this field isn't (and shouldn't be) case-sensitive; we're deliberately not using `strings.EqualFold`
-		if *dataDisk.Name != id.Name {
+		if *dataDisk.Name != name {
 			dataDisks = append(dataDisks, dataDisk)
 		}
 	}
@@ -275,13 +282,13 @@ func resourceVirtualMachineDataDiskAttachmentDelete(d *schema.ResourceData, meta
 	// fixes #1600
 	virtualMachine.Resources = nil
 
-	future, err := client.CreateOrUpdate(ctx, id.ResourceGroup, id.VirtualMachineName, virtualMachine)
+	future, err := client.CreateOrUpdate(ctx, resourceGroup, virtualMachineName, virtualMachine)
 	if err != nil {
-		return fmt.Errorf("removing Disk %q from Virtual Machine %q : %+v", id.Name, id.String(), err)
+		return fmt.Errorf("Error removing Disk %q from Virtual Machine %q (Resource Group %q): %+v", name, virtualMachineName, resourceGroup, err)
 	}
 
 	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for Disk %q to be removed from Virtual Machine %q : %+v", id.Name, id.String(), err)
+		return fmt.Errorf("Error waiting for Disk %q to be removed from Virtual Machine %q (Resource Group %q): %+v", name, virtualMachineName, resourceGroup, err)
 	}
 
 	return nil
@@ -292,20 +299,20 @@ func retrieveDataDiskAttachmentManagedDisk(d *schema.ResourceData, meta interfac
 	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
 	defer cancel()
 
-	//parsedId, err := localAzure.ManagedDiskID(id)
-	parsedId, err := parseAzureResourceID(id)
-	diskName := parsedId.Path["disks"]
+	parsedId, err := azure.ParseAzureResourceID(id)
 	if err != nil {
-		return nil, fmt.Errorf("parsing Managed Disk ID %q: %+v", *parsedId, err)
+		return nil, fmt.Errorf("Error parsing Managed Disk ID %q: %+v", id, err)
 	}
+	resourceGroup := parsedId.ResourceGroup
+	name := parsedId.Path["disks"]
 
-	resp, err := client.Get(ctx, parsedId.ResourceGroup, diskName)
+	resp, err := client.Get(ctx, resourceGroup, name)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
-			return nil, fmt.Errorf("Managed Disk %q  was not found!", *parsedId)
+			return nil, fmt.Errorf("Error Managed Disk %q (Resource Group %q) was not found!", name, resourceGroup)
 		}
 
-		return nil, fmt.Errorf("making Read request on Azure Managed Disk %q : %+v", *parsedId, err)
+		return nil, fmt.Errorf("Error making Read request on Azure Managed Disk %q (Resource Group %q): %+v", name, resourceGroup, err)
 	}
 
 	return &resp, nil
