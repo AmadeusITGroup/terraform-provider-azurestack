@@ -93,18 +93,20 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
 	defer cancel()
 
-	parsedVirtualMachineId, err := localAzure.VirtualMachineID(d.Get("virtual_machine_id").(string))
+	parsedVirtualMachineId, err := parseAzureResourceID(d.Get("virtual_machine_id").(string))
+
+	//parsedVirtualMachineId, err := localAzure.VirtualMachineID(d.Get("virtual_machine_id").(string))
 	if err != nil {
-		return fmt.Errorf("parsing Virtual Machine ID %q: %+v", parsedVirtualMachineId.ID(), err)
+		return fmt.Errorf("parsing Virtual Machine ID %q: %+v", *parsedVirtualMachineId, err)
 	}
 
-	virtualMachine, err := client.Get(ctx, parsedVirtualMachineId.ResourceGroup, parsedVirtualMachineId.Name, "")
+	virtualMachine, err := client.Get(ctx, parsedVirtualMachineId.ResourceGroup, parsedVirtualMachineId.Path["virtualMachines"], "")
 	if err != nil {
 		if utils.ResponseWasNotFound(virtualMachine.Response) {
-			return fmt.Errorf("Virtual Machine %q  was not found", parsedVirtualMachineId.String())
+			return fmt.Errorf("Virtual Machine %q  was not found", *parsedVirtualMachineId)
 		}
 
-		return fmt.Errorf("loading Virtual Machine %q : %+v", parsedVirtualMachineId.String(), err)
+		return fmt.Errorf("loading Virtual Machine %q : %+v", *parsedVirtualMachineId, err)
 	}
 
 	managedDiskId := d.Get("managed_disk_id").(string)
@@ -118,7 +120,7 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 	}
 
 	name := *managedDisk.Name
-	resourceId := fmt.Sprintf("%s/dataDisks/%s", parsedVirtualMachineId.ID(), name)
+	resourceId := fmt.Sprintf("%s/dataDisks/%s", *parsedVirtualMachineId, name)
 	lun := int32(d.Get("lun").(int))
 	caching := d.Get("caching").(string)
 	createOption := compute.DiskCreateOptionTypes(d.Get("create_option").(string))
@@ -154,7 +156,7 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 		disks = append(disks, expandedDisk)
 	} else {
 		if existingIndex == -1 {
-			return fmt.Errorf("Unable to find Disk %q attached to Virtual Machine %q ", name, parsedVirtualMachineId.String())
+			return fmt.Errorf("Unable to find Disk %q attached to Virtual Machine %q ", name, *parsedVirtualMachineId)
 		}
 
 		disks[existingIndex] = expandedDisk
@@ -170,13 +172,13 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 	// if there's too many disks we get a 409 back with:
 	//   `The maximum number of data disks allowed to be attached to a VM of this size is 1.`
 	// which we're intentionally not wrapping, since the errors good.
-	future, err := client.CreateOrUpdate(ctx, parsedVirtualMachineId.ResourceGroup, parsedVirtualMachineId.Name, virtualMachine)
+	future, err := client.CreateOrUpdate(ctx, parsedVirtualMachineId.ResourceGroup, parsedVirtualMachineId.Path["virtualMachines"], virtualMachine)
 	if err != nil {
-		return fmt.Errorf("updating Virtual Machine %q  with Disk %q: %+v", parsedVirtualMachineId.String(), name, err)
+		return fmt.Errorf("updating Virtual Machine %q  with Disk %q: %+v", *parsedVirtualMachineId, name, err)
 	}
 
 	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("waiting for Virtual Machine %q to finish updating Disk %q: %+v", parsedVirtualMachineId.String(), name, err)
+		return fmt.Errorf("waiting for Virtual Machine %q to finish updating Disk %q: %+v", *parsedVirtualMachineId, name, err)
 	}
 
 	d.SetId(resourceId)
@@ -290,18 +292,20 @@ func retrieveDataDiskAttachmentManagedDisk(d *schema.ResourceData, meta interfac
 	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
 	defer cancel()
 
-	parsedId, err := localAzure.ManagedDiskID(id)
+	//parsedId, err := localAzure.ManagedDiskID(id)
+	parsedId, err := parseAzureResourceID(id)
+	diskName := parsedId.Path["disks"]
 	if err != nil {
-		return nil, fmt.Errorf("parsing Managed Disk ID %q: %+v", parsedId.String(), err)
+		return nil, fmt.Errorf("parsing Managed Disk ID %q: %+v", *parsedId, err)
 	}
 
-	resp, err := client.Get(ctx, parsedId.ResourceGroup, parsedId.DiskName)
+	resp, err := client.Get(ctx, parsedId.ResourceGroup, diskName)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
-			return nil, fmt.Errorf("Managed Disk %q  was not found!", parsedId.String())
+			return nil, fmt.Errorf("Managed Disk %q  was not found!", *parsedId)
 		}
 
-		return nil, fmt.Errorf("making Read request on Azure Managed Disk %q : %+v", parsedId.String(), err)
+		return nil, fmt.Errorf("making Read request on Azure Managed Disk %q : %+v", *parsedId, err)
 	}
 
 	return &resp, nil
