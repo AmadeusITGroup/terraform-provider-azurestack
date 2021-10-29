@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage"
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2016-04-01/dns"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-11-01/subscriptions"
 	mainStorage "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -75,6 +76,9 @@ type ArmClient struct {
 	routesClient       network.RoutesClient
 	routeTablesClient  network.RouteTablesClient
 	vnetPeeringClient  network.VirtualNetworkPeeringsClient
+
+	// Subscription
+	subscriptionsClient subscriptions.Client
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -149,6 +153,7 @@ func getArmClient(authCfg *authentication.Config, tfVersion string, skipProvider
 	client.registerNetworkingClients(endpoint, client.subscriptionId, auth)
 	client.registerResourcesClients(endpoint, client.subscriptionId, auth)
 	client.registerStorageClients(endpoint, client.subscriptionId, auth)
+	client.registerSubscriptionsClient(endpoint, auth)
 
 	return &client, nil
 }
@@ -278,6 +283,12 @@ func (c *ArmClient) registerStorageClients(endpoint, subscriptionId string, auth
 	accountsClient := storage.NewAccountsClientWithBaseURI(endpoint, subscriptionId)
 	c.configureClient(&accountsClient.Client, auth)
 	c.storageServiceClient = accountsClient
+}
+
+func (c *ArmClient) registerSubscriptionsClient(endpoint string, auth autorest.Authorizer) {
+	subcriptionsClient := subscriptions.NewClientWithBaseURI(endpoint)
+	c.configureClient(&subcriptionsClient.Client, auth)
+	c.subscriptionsClient = subcriptionsClient
 }
 
 var (
