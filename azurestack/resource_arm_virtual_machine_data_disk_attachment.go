@@ -232,6 +232,7 @@ func resourceVirtualMachineDataDiskAttachmentRead(d *schema.ResourceData, meta i
 	d.Set("virtual_machine_id", virtualMachine.ID)
 	d.Set("caching", string(disk.Caching))
 	d.Set("create_option", string(disk.CreateOption))
+	d.Set("write_accelerator_enabled", disk.WriteAcceleratorEnabled)
 
 	if managedDisk := disk.ManagedDisk; managedDisk != nil {
 		d.Set("managed_disk_id", managedDisk.ID)
