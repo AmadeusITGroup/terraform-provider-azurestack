@@ -87,6 +87,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_dns_zone":                dataSourceArmDnsZone(),
 			"azurestack_subscription":            dataSourceArmSubscription(),
 			"azurestack_subscriptions":           dataSourceArmSubscriptions(),
+			"azurestack_resources":               dataSourceArmResources(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
