@@ -230,6 +230,12 @@ func resourceArmVirtualMachine() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: validateDiskSizeGB,
 						},
+
+						"write_accelerator_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
 					},
 				},
 			},
@@ -294,6 +300,12 @@ func resourceArmVirtualMachine() *schema.Resource {
 						"lun": {
 							Type:     schema.TypeInt,
 							Required: true,
+						},
+
+						"write_accelerator_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
 						},
 					},
 				},
@@ -913,11 +925,9 @@ func flattenAzureStackVirtualMachineImageReference(image *compute.ImageReference
 	if image.Version != nil {
 		result["version"] = *image.Version
 	}
-
-	// Image ID not in struct
-	// if image.ID != nil {
-	// 	result["id"] = *image.ID
-	// }
+	if image.ID != nil {
+		result["id"] = *image.ID
+	}
 
 	return []interface{}{result}
 }
