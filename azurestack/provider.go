@@ -88,6 +88,10 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_subscription":            dataSourceArmSubscription(),
 			"azurestack_subscriptions":           dataSourceArmSubscriptions(),
 			"azurestack_resources":               dataSourceArmResources(),
+			keyVaultResourceName:                 dataSourceArmKeyVault(),
+			"azurestack_key_vault_access_policy": dataSourceArmKeyVaultAccessPolicy(),
+			"azurestack_key_vault_key":           dataSourceArmKeyVaultKey(),
+			"azurestack_key_vault_secret":        dataSourceArmKeyVaultSecret(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -126,6 +130,10 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_dns_cname_record":                                   resourceArmDnsCNameRecord(),
 			"azurestack_subnet_network_security_group_association":          resourceArmSubnetNetworkSecurityGroupAssociation(),
 			"azurestack_virtual_network_peering":                            resourceArmVirtualNetworkPeering(), // NBO ADDED
+			keyVaultResourceName:                                            resourceArmKeyVault(),
+			"azurestack_key_vault_access_policy":                            resourceArmKeyVaultAccessPolicy(),
+			"azurestack_key_vault_key":                                      resourceArmKeyVaultKey(),
+			"azurestack_key_vault_secret":                                   resourceArmKeyVaultSecret(),
 		},
 	}
 
