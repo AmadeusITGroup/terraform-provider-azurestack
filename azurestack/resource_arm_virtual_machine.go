@@ -15,7 +15,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
-var virtualMachineResourceName = "azurestack_virtual_machine"
+var virtualMachineResourceName = resourceArmVirtualMachine()
 
 func resourceArmVirtualMachine() *schema.Resource {
 	return &schema.Resource{

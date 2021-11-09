@@ -12,7 +12,7 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
-var networkInterfaceResourceName = "azurestack_network_interface"
+var networkInterfaceResourceName = resourceArmNetworkInterface()
 
 func resourceArmNetworkInterface() *schema.Resource {
 	return &schema.Resource{
