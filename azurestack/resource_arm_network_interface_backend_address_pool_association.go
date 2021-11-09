@@ -66,6 +66,11 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationCreate(d *schema.Resou
 	ipConfigurationName := d.Get("ip_configuration_name").(string)
 	backendAddressPoolId := d.Get("backend_address_pool_id").(string)
 
+	// Locking this resource so we don't make modifications to it at the same time if there is a
+	// During destroy nic, updates to nic are not allowed. Hence, nics are not detached
+	azureStackLockByName(ipConfigurationName, networkInterfaceResourceName)
+	defer azureStackUnlockByName(ipConfigurationName, networkInterfaceResourceName)
+
 	nicId, err := azure.ParseAzureResourceID(networkInterfaceId)
 	if err != nil {
 		return err
@@ -238,6 +243,11 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationDelete(d *schema.Resou
 	networkInterfaceName := nicId.Path["networkInterfaces"]
 	resourceGroup := nicId.ResourceGroup
 	backendAddressPoolId := splitId[1]
+
+	// Locking this resource so we don't make modifications to it at the same time if there is a
+	// During destroy nic, updates to nic are not allowed. Hence, nics are not detached
+	azureStackLockByName(ipConfigurationName, networkInterfaceResourceName)
+	defer azureStackUnlockByName(ipConfigurationName, networkInterfaceResourceName)
 
 	read, err := client.Get(ctx, resourceGroup, networkInterfaceName, "")
 	if err != nil {

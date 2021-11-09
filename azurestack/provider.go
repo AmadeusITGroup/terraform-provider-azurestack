@@ -73,7 +73,7 @@ func Provider() terraform.ResourceProvider {
 
 		DataSourcesMap: map[string]*schema.Resource{
 			"azurestack_client_config":           dataSourceArmClientConfig(),
-			"azurestack_network_interface":       dataSourceArmNetworkInterface(),
+			networkInterfaceResourceName:         dataSourceArmNetworkInterface(),
 			"azurestack_network_security_group":  dataSourceArmNetworkSecurityGroup(),
 			"azurestack_platform_image":          dataSourceArmPlatformImage(),
 			"azurestack_public_ip":               dataSourceArmPublicIP(),
@@ -99,7 +99,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_dns_zone":                                           resourceArmDnsZone(),
 			"azurestack_dns_a_record":                                       resourceArmDnsARecord(),
 			"azurestack_image":                                              resourceArmImage(),
-			"azurestack_network_interface":                                  resourceArmNetworkInterface(),
+			networkInterfaceResourceName:                                    resourceArmNetworkInterface(),
 			"azurestack_network_security_group":                             resourceArmNetworkSecurityGroup(),
 			"azurestack_network_security_rule":                              resourceArmNetworkSecurityRule(),
 			"azurestack_network_interface_backend_address_pool_association": resourceArmNetworkInterfaceBackendAddressPoolAssociation(),
@@ -122,7 +122,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_template_deployment":                                resourceArmTemplateDeployment(),
 			"azurestack_virtual_network":                                    resourceArmVirtualNetwork(),
 			"azurestack_virtual_network_gateway":                            resourceArmVirtualNetworkGateway(),
-			"azurestack_virtual_machine":                                    resourceArmVirtualMachine(),
+			virtualMachineResourceName:                                      resourceArmVirtualMachine(),
 			"azurestack_virtual_machine_extension":                          resourceArmVirtualMachineExtensions(),
 			"azurestack_virtual_machine_data_disk_attachment":               resourceArmVirtualMachineDataDiskAttachment(),
 			"azurestack_virtual_network_gateway_connection":                 resourceArmVirtualNetworkGatewayConnection(),

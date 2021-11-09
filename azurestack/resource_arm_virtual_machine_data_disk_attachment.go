@@ -100,6 +100,11 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 	resourceGroup := parsedVirtualMachineId.ResourceGroup
 	virtualMachineName := parsedVirtualMachineId.Path["virtualMachines"]
 
+	// Locking this resource so we don't make modifications to it at the same time if there is a
+	// During destroy vm, updates to vm are not allowed. Hence, disks are not detached
+	azureStackLockByName(virtualMachineName, virtualMachineResourceName)
+	defer azureStackUnlockByName(virtualMachineName, virtualMachineResourceName)
+
 	virtualMachine, err := client.Get(ctx, resourceGroup, virtualMachineName, "")
 	if err != nil {
 		if utils.ResponseWasNotFound(virtualMachine.Response) {
@@ -120,7 +125,7 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 	}
 
 	name := *managedDisk.Name
-	resourceId := fmt.Sprintf("%s/dataDisks/%s", *parsedVirtualMachineId, name)
+	resourceId := fmt.Sprintf("%s/dataDisks/%s", virtualMachineId, name)
 	lun := int32(d.Get("lun").(int))
 	caching := d.Get("caching").(string)
 	createOption := compute.DiskCreateOptionTypes(d.Get("create_option").(string))
@@ -258,6 +263,11 @@ func resourceVirtualMachineDataDiskAttachmentDelete(d *schema.ResourceData, meta
 	resourceGroup := id.ResourceGroup
 	virtualMachineName := id.Path["virtualMachines"]
 	name := id.Path["dataDisks"]
+
+	// Locking this resource so we don't make modifications to it at the same time if there is a
+	// During destroy vm, updates to vm are not allowed. Hence, disks are not detached
+	azureStackLockByName(virtualMachineName, virtualMachineResourceName)
+	defer azureStackUnlockByName(virtualMachineName, virtualMachineResourceName)
 
 	virtualMachine, err := client.Get(ctx, resourceGroup, virtualMachineName, "")
 	if err != nil {
