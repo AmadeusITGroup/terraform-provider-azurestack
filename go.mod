@@ -10,6 +10,7 @@ require (
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-azure-helpers v0.16.5
+	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/terraform-plugin-sdk v1.16.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/terraform-providers/terraform-provider-azurerm v1.44.1-0.20200911233120-57b2bfc9d42c
