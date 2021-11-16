@@ -81,10 +81,10 @@ func resourceArmRoleAssignment() *schema.Resource {
 				ForceNew: true,
 			},
 
-			"principal_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
+			//"principal_type": {
+			//	Type:     schema.TypeString,
+			//	Computed: true,
+			//},
 
 			"skip_service_principal_aad_check": {
 				Type:     schema.TypeBool,
@@ -145,7 +145,7 @@ func resourceArmRoleAssignmentCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	properties := authorization.RoleAssignmentCreateParameters{
-		RoleAssignmentProperties: &authorization.RoleAssignmentProperties{
+		Properties: &authorization.RoleAssignmentProperties{
 			RoleDefinitionID: utils.String(roleDefinitionId),
 			PrincipalID:      utils.String(principalId),
 		},
@@ -153,7 +153,7 @@ func resourceArmRoleAssignmentCreate(d *schema.ResourceData, meta interface{}) e
 
 	skipPrincipalCheck := d.Get("skip_service_principal_aad_check").(bool)
 	if skipPrincipalCheck {
-		properties.RoleAssignmentProperties.PrincipalType = authorization.ServicePrincipal
+		properties.Properties.PrincipalID = &principalId
 	}
 
 	if err := resource.Retry(d.Timeout(schema.TimeoutCreate), retryRoleAssignmentsClient(d, scope, name, properties, meta)); err != nil {
@@ -191,11 +191,11 @@ func resourceArmRoleAssignmentRead(d *schema.ResourceData, meta interface{}) err
 
 	d.Set("name", resp.Name)
 
-	if props := resp.RoleAssignmentPropertiesWithScope; props != nil {
+	if props := resp.Properties; props != nil {
 		d.Set("scope", props.Scope)
 		d.Set("role_definition_id", props.RoleDefinitionID)
 		d.Set("principal_id", props.PrincipalID)
-		d.Set("principal_type", props.PrincipalType)
+		//d.Set("principal_type", props.PrincipalType)
 
 		// allows for import when role name is used (also if the role name changes a plan will show a diff)
 		if roleId := props.RoleDefinitionID; roleId != nil {
