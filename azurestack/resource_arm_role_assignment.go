@@ -151,11 +151,6 @@ func resourceArmRoleAssignmentCreate(d *schema.ResourceData, meta interface{}) e
 		},
 	}
 
-	skipPrincipalCheck := d.Get("skip_service_principal_aad_check").(bool)
-	if skipPrincipalCheck {
-		properties.Properties.PrincipalID = &principalId
-	}
-
 	if err := resource.Retry(d.Timeout(schema.TimeoutCreate), retryRoleAssignmentsClient(d, scope, name, properties, meta)); err != nil {
 		return err
 	}
