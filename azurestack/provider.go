@@ -134,6 +134,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_key_vault_access_policy":                            resourceArmKeyVaultAccessPolicy(),
 			"azurestack_key_vault_key":                                      resourceArmKeyVaultKey(),
 			"azurestack_key_vault_secret":                                   resourceArmKeyVaultSecret(),
+			roleAssignmentResourceName:                                      resourceArmRoleAssignment(),
 		},
 	}
 

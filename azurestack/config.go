@@ -13,6 +13,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage"
+	"github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization"
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2016-04-01/dns"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	keyvaultmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
@@ -27,6 +28,13 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
+type AuthorizationClient struct {
+	GroupsClient            *graphrbac.GroupsClient
+	RoleAssignmentsClient   *authorization.RoleAssignmentsClient
+	RoleDefinitionsClient   *authorization.RoleDefinitionsClient
+	ServicePrincipalsClient *graphrbac.ServicePrincipalsClient
+}
+
 // ArmClient contains the handles to all the specific Azure Resource Manager
 // resource classes' respective clients.
 type ArmClient struct {
@@ -39,9 +47,6 @@ type ArmClient struct {
 	skipProviderRegistration bool
 
 	StopContext context.Context
-
-	// Authentication
-	servicePrincipalsClient graphrbac.ServicePrincipalsClient
 
 	// DNS
 	dnsClient   dns.RecordSetsClient
@@ -87,6 +92,9 @@ type ArmClient struct {
 
 	// Subscription
 	subscriptionsClient subscriptions.Client
+
+	//Authorization
+	authorizationClient AuthorizationClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -158,7 +166,8 @@ func getArmClient(authCfg *authentication.Config, tfVersion string, skipProvider
 	// KeyVault Management Endpoint
 	keyVaultAuth := authCfg.BearerAuthorizerCallback(sender, oauth)
 
-	client.registerAuthentication(graphEndpoint, client.tenantId, graphAuth, sender)
+	client.registerAuthorizationClients(graphEndpoint, endpoint, client.tenantId, client.subscriptionId, graphAuth, auth)
+
 	client.registerComputeClients(endpoint, client.subscriptionId, auth)
 	client.registerDNSClients(endpoint, client.subscriptionId, auth)
 	client.registerNetworkingClients(endpoint, client.subscriptionId, auth)
@@ -171,13 +180,27 @@ func getArmClient(authCfg *authentication.Config, tfVersion string, skipProvider
 	return &client, nil
 }
 
-func (c *ArmClient) registerAuthentication(graphEndpoint, tenantId string, graphAuth autorest.Authorizer, sender autorest.Sender) {
+func (c *ArmClient) registerAuthorizationClients(graphEndpoint, endpoint, tenantId, subscriptionId string, graphAuth, auth autorest.Authorizer) {
+
+	groupsClient := graphrbac.NewGroupsClientWithBaseURI(graphEndpoint, tenantId)
+	c.configureClient(&groupsClient.Client, graphAuth)
+
+	roleAssignmentsClient := authorization.NewRoleAssignmentsClientWithBaseURI(endpoint, subscriptionId)
+	c.configureClient(&roleAssignmentsClient.Client, auth)
+
+	roleDefinitionsClient := authorization.NewRoleDefinitionsClientWithBaseURI(endpoint, subscriptionId)
+	c.configureClient(&roleDefinitionsClient.Client, auth)
+
 	servicePrincipalsClient := graphrbac.NewServicePrincipalsClientWithBaseURI(graphEndpoint, tenantId)
-	setUserAgent(&servicePrincipalsClient.Client, c.terraformVersion)
-	servicePrincipalsClient.Authorizer = graphAuth
-	servicePrincipalsClient.Sender = sender
-	servicePrincipalsClient.SkipResourceProviderRegistration = c.skipProviderRegistration
-	c.servicePrincipalsClient = servicePrincipalsClient
+	c.configureClient(&servicePrincipalsClient.Client, graphAuth)
+
+	c.authorizationClient = AuthorizationClient{
+		GroupsClient:            &groupsClient,
+		RoleAssignmentsClient:   &roleAssignmentsClient,
+		RoleDefinitionsClient:   &roleDefinitionsClient,
+		ServicePrincipalsClient: &servicePrincipalsClient,
+	}
+
 }
 
 func (c *ArmClient) registerComputeClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
