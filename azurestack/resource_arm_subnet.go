@@ -423,3 +423,37 @@ func subnetIDInsensitively(input string) (*SubnetId, error) {
 
 	return &resourceId, nil
 }
+
+// SubnetID parses a Subnet ID into an SubnetId struct
+func ParseSubnetID(input string) (*SubnetId, error) {
+	id, err := azure.ParseAzureResourceID(input)
+	if err != nil {
+		return nil, err
+	}
+
+	resourceId := SubnetId{
+		SubscriptionId: id.SubscriptionID,
+		ResourceGroup:  id.ResourceGroup,
+	}
+
+	if resourceId.SubscriptionId == "" {
+		return nil, fmt.Errorf("ID was missing the 'subscriptions' element")
+	}
+
+	if resourceId.ResourceGroup == "" {
+		return nil, fmt.Errorf("ID was missing the 'resourceGroups' element")
+	}
+
+	if resourceId.VirtualNetworkName, err = id.PopSegment("virtualNetworks"); err != nil {
+		return nil, err
+	}
+	if resourceId.Name, err = id.PopSegment("subnets"); err != nil {
+		return nil, err
+	}
+
+	if err := id.ValidateNoEmptySegments(input); err != nil {
+		return nil, err
+	}
+
+	return &resourceId, nil
+}

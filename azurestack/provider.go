@@ -129,6 +129,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_virtual_machine_scale_set":                          resourceArmVirtualMachineScaleSet(),
 			"azurestack_dns_cname_record":                                   resourceArmDnsCNameRecord(),
 			"azurestack_subnet_network_security_group_association":          resourceArmSubnetNetworkSecurityGroupAssociation(),
+			"azurestack_subnet_route_table_association":                     resourceArmSubnetRouteTableAssociation(),
 			"azurestack_virtual_network_peering":                            resourceArmVirtualNetworkPeering(), // NBO ADDED
 			keyVaultResourceName:                                            resourceArmKeyVault(),
 			"azurestack_key_vault_access_policy":                            resourceArmKeyVaultAccessPolicy(),
