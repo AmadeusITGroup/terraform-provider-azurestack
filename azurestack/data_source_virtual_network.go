@@ -46,11 +46,10 @@ func dataSourceArmVirtualNetwork() *schema.Resource {
 				},
 			},
 
-			// Not supported for 2017-03-09 profile
-			// "vnet_peerings": {
-			// 	Type:     schema.TypeMap,
-			// 	Computed: true,
-			// },
+			"vnet_peerings": {
+				Type:     schema.TypeMap,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -90,11 +89,10 @@ func dataSourceArmVnetRead(d *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 
-		// Not supported for 2017-03-09 profile
-		// vnetPeerings := flattenVnetPeerings(props.VirtualNetworkPeerings)
-		// if err := d.Set("vnet_peerings", vnetPeerings); err != nil {
-		// 	return err
-		// }
+		vnetPeerings := flattenVnetPeerings(props.VirtualNetworkPeerings)
+		if err := d.Set("vnet_peerings", vnetPeerings); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -121,18 +119,17 @@ func flattenVnetSubnetsNames(input *[]network.Subnet) []interface{} {
 	return subnets
 }
 
-// Not supported for 2017-03-09 profile
-// func flattenVnetPeerings(input *[]network.VirtualNetworkPeering) map[string]interface{} {
-// 	output := make(map[string]interface{}, 0)
-//
-// 	if peerings := input; peerings != nil {
-// 		for _, vnetpeering := range *peerings {
-// 			key := *vnetpeering.Name
-// 			value := *vnetpeering.RemoteVirtualNetwork.ID
-//
-// 			output[key] = value
-//
-// 		}
-// 	}
-// 	return output
-// }
+func flattenVnetPeerings(input *[]network.VirtualNetworkPeering) map[string]interface{} {
+	output := make(map[string]interface{}, 0)
+
+	if peerings := input; peerings != nil {
+		for _, vnetpeering := range *peerings {
+			key := *vnetpeering.Name
+			value := *vnetpeering.RemoteVirtualNetwork.ID
+
+			output[key] = value
+
+		}
+	}
+	return output
+}
