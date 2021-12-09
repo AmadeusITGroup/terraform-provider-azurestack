@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
@@ -38,8 +39,7 @@ func resourceArmVirtualMachine() *schema.Resource {
 
 			"resource_group_name": resourceGroupNameSchema(),
 
-			// Zones is not in the SDK, so we remove it
-			// "zones": singleZonesSchema(),
+			"zones": azure.SchemaSingleZone(),
 
 			"plan": {
 				Type:     schema.TypeList,
@@ -73,6 +73,7 @@ func resourceArmVirtualMachine() *schema.Resource {
 				StateFunc: func(id interface{}) string {
 					return strings.ToLower(id.(string))
 				},
+				ConflictsWith: []string{"zones"},
 			},
 
 			"identity": {
@@ -526,7 +527,7 @@ func resourceArmVirtualMachineCreate(d *schema.ResourceData, meta interface{}) e
 	resGroup := d.Get("resource_group_name").(string)
 	tags := d.Get("tags").(map[string]interface{})
 	expandedTags := expandTags(tags)
-	// zones := expandZones(d.Get("zones").([]interface{}))
+	zones := azure.ExpandZones(d.Get("zones").([]interface{}))
 
 	osDisk, err := expandAzureStackVirtualMachineOsDisk(d)
 	if err != nil {
@@ -596,9 +597,7 @@ func resourceArmVirtualMachineCreate(d *schema.ResourceData, meta interface{}) e
 		Location:                 &location,
 		VirtualMachineProperties: &properties,
 		Tags:                     *expandedTags,
-
-		// The attribute zones is missing in the virtual machin struct for 2017-03-09 profile
-		// Zones: zones,
+		Zones:                    zones,
 	}
 
 	if _, ok := d.GetOk("identity"); ok {
@@ -661,8 +660,7 @@ func resourceArmVirtualMachineRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("name", resp.Name)
 	d.Set("resource_group_name", resGroup)
 
-	// The attribute zones is missing in the virtual machine struct for 2017-03-09 profile
-	// d.Set("zones", resp.Zones)
+	d.Set("zones", resp.Zones)
 	if location := resp.Location; location != nil {
 		d.Set("location", azureStackNormalizeLocation(*location))
 	}
