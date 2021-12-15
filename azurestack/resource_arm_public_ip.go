@@ -5,19 +5,21 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
 func resourceArmPublicIp() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceArmPublicIpCreate,
+		Create: resourceArmPublicIpCreateUpdate,
 		Read:   resourceArmPublicIpRead,
-		Update: resourceArmPublicIpCreate,
+		Update: resourceArmPublicIpCreateUpdate,
 		Delete: resourceArmPublicIpDelete,
 
 		Importer: &schema.ResourceImporter{
@@ -34,32 +36,26 @@ func resourceArmPublicIp() *schema.Resource {
 			},
 		},
 
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
+		},
+
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.NoZeroValues,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 
 			"location": locationSchema(),
 
 			"resource_group_name": resourceGroupNameSchema(),
 
-			// Not supported for 2017-03-09 profile
-			// "zones": singleZonesSchema(),
-
-			"public_ip_address_allocation": {
-				Type:             schema.TypeString,
-				Required:         true,
-				StateFunc:        ignoreCaseStateFunc,
-				DiffSuppressFunc: suppress.CaseDifference,
-				ValidateFunc: validation.StringInSlice([]string{
-					string(network.Dynamic),
-					string(network.Static),
-				}, true),
-				Deprecated: "Removed function",
-			},
+			"zones": azure.SchemaSingleZone(),
 
 			"allocation_method": {
 				Type:             schema.TypeString,
@@ -100,57 +96,50 @@ func resourceArmPublicIp() *schema.Resource {
 				Computed: true,
 			},
 
-			// Not supported for 2017-03-09 profile
-			// "sku": {
-			// 	Type:     schema.TypeString,
-			// 	Optional: true,
-			// 	Default:  "Basic",
-			// 	ForceNew: true,
-			// 	ValidateFunc: validation.StringInSlice([]string{
-			// 		"Basic",
-			// 		"Standard",
-			// 	}, true),
-			// 	DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
-			// },
+			"sku": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  string(network.PublicIPAddressSkuNameBasic),
+				ForceNew: true,
+				ValidateFunc: validation.StringInSlice([]string{
+					string(network.PublicIPAddressSkuNameBasic),
+					string(network.PublicIPAddressSkuNameStandard),
+				}, true),
+				DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
+			},
 
 			"tags": tagsSchema(),
 		},
 	}
 }
 
-func resourceArmPublicIpCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceArmPublicIpCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).publicIPClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForCreateUpdate(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	log.Printf("[INFO] preparing arguments for AzureStack Public IP creation.")
 
 	name := d.Get("name").(string)
 	location := azureStackNormalizeLocation(d.Get("location").(string))
 	resGroup := d.Get("resource_group_name").(string)
-	// Not supported for 2017-03-09 profile
-	// sku := network.PublicIPAddressSku{
-	// 	Name: network.PublicIPAddressSkuName(d.Get("sku").(string)),
-	// }
+	sku := d.Get("sku").(string)
+	ipAllocationMethod := d.Get("allocation_method").(string)
 	tags := d.Get("tags").(map[string]interface{})
 
-	// Not supported for 2017-03-09 profile
-	// zones := expandZones(d.Get("zones").([]interface{}))
+	zones := azure.ExpandZones(d.Get("zones").([]interface{}))
 
-	// Not supported for 2017-03-09 profile
-	// if strings.ToLower(string(sku.Name)) == "standard" {
-	// 	if strings.ToLower(string(ipAllocationMethod)) != "static" {
-	// 		return fmt.Errorf("Static IP allocation must be used when creating Standard SKU public IP addresses.")
-	// 	}
-	// }
-
-	ipAllocationMethod, ipAllocationMethodSet := d.GetOk("allocation_method")
-	if !ipAllocationMethodSet {
-		ipPublicAllocationMethod, ipAllocationMethodSet := d.GetOk("public_ip_address_allocation")
-		if !ipAllocationMethodSet {
-			ipAllocationMethod = ipPublicAllocationMethod
+	if strings.EqualFold(sku, string(network.PublicIPAddressSkuNameBasic)) {
+		if zones != nil {
+			return fmt.Errorf("Basic SKU does not support Availability Zone scenarios. You need to use Standard SKU public IP for Availability Zone scenarios.")
 		}
 	}
-	ipAllocationMethodStr := ipAllocationMethod.(string)
+
+	if strings.EqualFold(sku, string(network.PublicIPAddressSkuNameStandard)) {
+		if !strings.EqualFold(ipAllocationMethod, string(network.Static)) {
+			return fmt.Errorf("Static IP allocation must be used when creating Standard SKU public IP addresses.")
+		}
+	}
 
 	idleTimeout := d.Get("idle_timeout_in_minutes").(int)
 
@@ -158,13 +147,14 @@ func resourceArmPublicIpCreate(d *schema.ResourceData, meta interface{}) error {
 		Name:     &name,
 		Location: &location,
 		PublicIPAddressPropertiesFormat: &network.PublicIPAddressPropertiesFormat{
-			PublicIPAllocationMethod: network.IPAllocationMethod(ipAllocationMethodStr),
+			PublicIPAllocationMethod: network.IPAllocationMethod(ipAllocationMethod),
 			IdleTimeoutInMinutes:     utils.Int32(int32(idleTimeout)),
 		},
 		Tags: *expandTags(tags),
-		// Not supported for 2017-03-09 profile
-		// Sku:      &sku,
-		// Zones: zones,
+		Sku: &network.PublicIPAddressSku{
+			Name: network.PublicIPAddressSkuName(sku),
+		},
+		Zones: zones,
 	}
 
 	dnl, hasDnl := d.GetOk("domain_name_label")
@@ -210,7 +200,8 @@ func resourceArmPublicIpCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceArmPublicIpRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).publicIPClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForRead(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := parseAzureResourceID(d.Id())
 	if err != nil {
@@ -237,10 +228,10 @@ func resourceArmPublicIpRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("allocation_method", strings.ToLower(string(resp.PublicIPAddressPropertiesFormat.PublicIPAllocationMethod)))
 
-	// if sku := resp.Sku; sku != nil {
-	// 	d.Set("sku", string(sku.Name))
-	// }
-	// d.Set("zones", resp.Zones)
+	if sku := resp.Sku; sku != nil {
+		d.Set("sku", string(sku.Name))
+	}
+	d.Set("zones", resp.Zones)
 
 	if props := resp.PublicIPAddressPropertiesFormat; props != nil {
 		d.Set("allocation_method", strings.ToLower(string(props.PublicIPAllocationMethod)))
@@ -260,7 +251,8 @@ func resourceArmPublicIpRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceArmPublicIpDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*ArmClient).publicIPClient
-	ctx := meta.(*ArmClient).StopContext
+	ctx, cancel := ForDelete(meta.(*ArmClient).StopContext, d)
+	defer cancel()
 
 	id, err := parseAzureResourceID(d.Id())
 	if err != nil {
