@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
+	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-	"github.com/terraform-providers/terraform-provider-azurestack/vendor/github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
 )
 
 func resourceArmVirtualMachineScaleSet() *schema.Resource {
