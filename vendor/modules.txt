@@ -8,7 +8,7 @@ cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 # cloud.google.com/go/storage v1.10.0
 cloud.google.com/go/storage
-# github.com/Azure/azure-sdk-for-go v51.2.0+incompatible
+# github.com/Azure/azure-sdk-for-go v61.0.0+incompatible
 ## explicit
 github.com/Azure/azure-sdk-for-go/profiles/2017-03-09/resources/mgmt/resources
 github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute
@@ -16,6 +16,7 @@ github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network
 github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage
 github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization
 github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute
+github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute
 github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2016-04-01/dns
 github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac
 github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault
@@ -98,6 +99,7 @@ github.com/bgentry/go-netrc/netrc
 # github.com/bgentry/speakeasy v0.1.0
 github.com/bgentry/speakeasy
 # github.com/btubbs/datetime v0.1.0
+## explicit
 github.com/btubbs/datetime
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
@@ -171,6 +173,9 @@ github.com/go-git/go-git/v5/utils/merkletrie/filesystem
 github.com/go-git/go-git/v5/utils/merkletrie/index
 github.com/go-git/go-git/v5/utils/merkletrie/internal/frame
 github.com/go-git/go-git/v5/utils/merkletrie/noder
+# github.com/gofrs/uuid v4.2.0+incompatible
+## explicit
+github.com/gofrs/uuid
 # github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.4.2
@@ -352,6 +357,7 @@ github.com/posener/complete/cmd
 github.com/posener/complete/cmd/install
 github.com/posener/complete/match
 # github.com/rickb777/date v1.12.5-0.20200422084442-6300e543c4d9
+## explicit
 github.com/rickb777/date/period
 # github.com/rickb777/plural v1.2.0
 github.com/rickb777/plural
