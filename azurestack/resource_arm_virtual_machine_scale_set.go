@@ -487,7 +487,7 @@ func resourceArmVirtualMachineScaleSet() *schema.Resource {
 						},
 					},
 				},
-				Set: resourceArmVirtualMachineScaleSetNetworkConfigurationHash,
+				Set: resourceVirtualMachineScaleSetNetworkConfigurationHash,
 			},
 
 			"boot_diagnostics": {
@@ -727,7 +727,7 @@ func resourceArmVirtualMachineScaleSetCreate(d *schema.ResourceData, meta interf
 	location := azureStackNormalizeLocation(d.Get("location").(string))
 	resGroup := d.Get("resource_group_name").(string)
 	tags := d.Get("tags").(map[string]interface{})
-	zones := expandZones(d.Get("zones").([]interface{}))
+	zones := azure.ExpandZones(d.Get("zones").([]interface{}))
 
 	sku, err := expandVirtualMachineScaleSetSku(d)
 	if err != nil {
@@ -1938,10 +1938,6 @@ func expandAzureStackVirtualMachineScaleSetsStorageProfileOsDisk(d *schema.Resou
 	createOption := osDiskConfig["create_option"].(string)
 	managedDiskType := osDiskConfig["managed_disk_type"].(string)
 
-	if managedDiskType == "" && name == "" {
-		return nil, fmt.Errorf("[ERROR] `name` must be set in `storage_profile_os_disk` for unmanaged disk")
-	}
-
 	osDisk := &compute.VirtualMachineScaleSetOSDisk{
 		Caching:      compute.CachingTypes(caching),
 		OsType:       compute.OperatingSystemTypes(osType),
@@ -2003,7 +1999,7 @@ func expandAzureStackVirtualMachineScaleSetsStorageProfileDataDisk(d *schema.Res
 		if managedDiskType != "" {
 			managedDiskVMSS.StorageAccountType = compute.StorageAccountTypes(managedDiskType)
 		} else {
-			managedDiskVMSS.StorageAccountType = compute.StandardLRS
+			managedDiskVMSS.StorageAccountType = compute.StorageAccountTypes(compute.StandardLRS)
 		}
 
 		// assume that data disks in VMSS can only be Managed Disks
@@ -2241,4 +2237,38 @@ func expandAzureStackVirtualMachineScaleSetExtensions(d *schema.ResourceData) (*
 	return &compute.VirtualMachineScaleSetExtensionProfile{
 		Extensions: &resources,
 	}, nil
+}
+
+// When upgrade_policy_mode is not Rolling, we will just ignore rolling_upgrade_policy (returns true).
+func azureRmVirtualMachineScaleSetSuppressRollingUpgradePolicyDiff(k, _, new string, d *schema.ResourceData) bool {
+	if k == "rolling_upgrade_policy.#" && new == "0" {
+		return strings.ToLower(d.Get("upgrade_policy_mode").(string)) != "rolling"
+	}
+	return false
+}
+
+func expandAzureRmVirtualMachineScaleSetPlan(d *schema.ResourceData) *compute.Plan {
+	planConfigs := d.Get("plan").(*schema.Set).List()
+
+	planConfig := planConfigs[0].(map[string]interface{})
+
+	publisher := planConfig["publisher"].(string)
+	name := planConfig["name"].(string)
+	product := planConfig["product"].(string)
+
+	return &compute.Plan{
+		Publisher: &publisher,
+		Name:      &name,
+		Product:   &product,
+	}
+}
+
+func flattenAzureRmVirtualMachineScaleSetPlan(plan *compute.Plan) []interface{} {
+	result := make(map[string]interface{})
+
+	result["name"] = *plan.Name
+	result["publisher"] = *plan.Publisher
+	result["product"] = *plan.Product
+
+	return []interface{}{result}
 }

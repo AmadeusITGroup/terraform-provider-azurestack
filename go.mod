@@ -3,18 +3,15 @@ module github.com/terraform-providers/terraform-provider-azurestack
 go 1.16
 
 require (
-	github.com/Azure/azure-sdk-for-go v61.0.0+incompatible
+	github.com/Azure/azure-sdk-for-go v51.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.18
 	github.com/Azure/go-autorest/autorest/date v0.3.0
-	github.com/btubbs/datetime v0.1.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
-	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-azure-helpers v0.16.5
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/terraform-plugin-sdk v1.16.0
-	github.com/rickb777/date v1.12.5-0.20200422084442-6300e543c4d9
 	github.com/satori/go.uuid v1.2.0
 	github.com/terraform-providers/terraform-provider-azurerm v1.44.1-0.20200911233120-57b2bfc9d42c
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
