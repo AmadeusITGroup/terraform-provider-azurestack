@@ -458,6 +458,12 @@ func resourceArmVirtualMachineScaleSet() *schema.Resource {
 										Required: true,
 									},
 
+									"ip_forwarding": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Default:  false,
+									},
+
 									"public_ip_address_configuration": {
 										Type:     schema.TypeList,
 										Optional: true,
