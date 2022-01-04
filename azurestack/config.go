@@ -14,6 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage"
 	"github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization"
+	vmScaleSet "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2016-04-01/dns"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
 	keyvaultmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
@@ -73,7 +74,7 @@ type ArmClient struct {
 	vmExtensionClient    compute.VirtualMachineExtensionsClient
 	vmClient             compute.VirtualMachinesClient
 	vmImageClient        compute.VirtualMachineImagesClient
-	vmScaleSetClient     compute.VirtualMachineScaleSetsClient
+	vmScaleSetClient     vmScaleSet.VirtualMachineScaleSetsClient
 	storageServiceClient storage.AccountsClient
 
 	// Network
@@ -220,7 +221,7 @@ func (c *ArmClient) registerComputeClients(endpoint, subscriptionId string, auth
 	c.configureClient(&extensionsClient.Client, auth)
 	c.vmExtensionClient = extensionsClient
 
-	scaleSetsClient := compute.NewVirtualMachineScaleSetsClientWithBaseURI(endpoint, subscriptionId)
+	scaleSetsClient := vmScaleSet.NewVirtualMachineScaleSetsClientWithBaseURI(endpoint, subscriptionId)
 	c.configureClient(&scaleSetsClient.Client, auth)
 	c.vmScaleSetClient = scaleSetsClient
 

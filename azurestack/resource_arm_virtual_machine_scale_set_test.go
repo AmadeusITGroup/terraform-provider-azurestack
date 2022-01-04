@@ -9,8 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"golang.org/x/crypto/ssh"
@@ -973,6 +974,17 @@ func testCheckAzureStackVirtualMachineScaleSetHasDataDisks(name string) resource
 
 		return nil
 	}
+}
+
+func resourceArmVirtualMachineScaleSetNetworkConfigurationHash(v interface{}) int {
+	var buf bytes.Buffer
+
+	if m, ok := v.(map[string]interface{}); ok {
+		buf.WriteString(fmt.Sprintf("%s-", m["name"].(string)))
+		// buf.WriteString(fmt.Sprintf("%t-", m["primary"].(bool)))
+	}
+
+	return hashcode.String(buf.String())
 }
 
 func testAccAzureStackVirtualMachineScaleSet_basic(rInt int, location string) string {
