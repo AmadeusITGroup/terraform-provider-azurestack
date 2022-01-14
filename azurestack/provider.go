@@ -93,6 +93,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_key_vault_key":           dataSourceArmKeyVaultKey(),
 			"azurestack_key_vault_secret":        dataSourceArmKeyVaultSecret(),
 			"azurestack_image":                   dataSourceArmImage(),
+			"azurestack_role_definition":         dataSourceArmRoleDefinition(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
@@ -137,6 +138,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_key_vault_key":                                      resourceArmKeyVaultKey(),
 			"azurestack_key_vault_secret":                                   resourceArmKeyVaultSecret(),
 			roleAssignmentResourceName:                                      resourceArmRoleAssignment(),
+			"azurestack_role_definition":                                    resourceArmRoleDefinition(),
 		},
 	}
 
