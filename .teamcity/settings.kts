@@ -12,4 +12,4 @@ var endpoint = DslContext.getParameter("endpoint", "")
 
 var clientConfig = ClientConfiguration(clientId, clientSecret, subscriptionId, tenantId, endpoint)
 
-project(AzureStack(endpoint, clientConfig))
+project(AzureStack("stack", clientConfig))
