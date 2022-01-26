@@ -292,7 +292,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "test-ip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {
@@ -329,7 +329,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "test-ip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {
@@ -357,7 +357,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "test-ip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {
@@ -408,7 +408,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "test-ip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {
@@ -455,7 +455,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "test-ip-%d"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
 }
 
 resource "azurestack_lb" "test" {

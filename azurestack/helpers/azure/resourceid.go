@@ -149,3 +149,25 @@ func ParseRouteTableName(routeTableId string) (string, error) {
 
 	return id.Path["routeTables"], nil
 }
+
+// PopSegment retrieves a segment from the Path and returns it
+// if found it removes it from the Path then return the value
+// if not found, this returns nil
+func (id *ResourceID) PopSegment(name string) (string, error) {
+	val, ok := id.Path[name]
+	if !ok {
+		return "", fmt.Errorf("ID was missing the `%s` element", name)
+	}
+
+	delete(id.Path, name)
+	return val, nil
+}
+
+// ValidateNoEmptySegments validates ...
+func (id *ResourceID) ValidateNoEmptySegments(sourceId string) error {
+	if len(id.Path) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("ID contained more segments than required: %q, %v", sourceId, id.Path)
+}

@@ -67,54 +67,51 @@ func resourceArmNetworkSecurityGroup() *schema.Resource {
 
 						// The Following attributes are not included in the profile for
 						// Azure Stack
-						// destination_port_ranges
-						// source_address_prefixes
 						// source_application_security_group_ids
-						// destination_address_prefixes
 						// destination_application_security_group_ids
 
-						// "source_port_ranges": {
-						// 	Type:     schema.TypeString,
-						// 	Optional: true,
-						// 	Elem:     &schema.Schema{Type: schema.TypeString},
-						// 	Set:      schema.HashString,
-						// },
+						"source_port_ranges": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Set:      schema.HashString,
+						},
 
 						"destination_port_range": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
 
-						// "destination_port_ranges": {
-						// 	Type:     schema.TypeSet,
-						// 	Optional: true,
-						// 	Elem:     &schema.Schema{Type: schema.TypeString},
-						// 	Set:      schema.HashString,
-						// },
+						"destination_port_ranges": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Set:      schema.HashString,
+						},
 
 						"source_address_prefix": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
 
-						// "source_address_prefixes": {
-						// 	Type:     schema.TypeSet,
-						// 	Optional: true,
-						// 	Elem:     &schema.Schema{Type: schema.TypeString},
-						// 	Set:      schema.HashString,
-						// },
+						"source_address_prefixes": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Set:      schema.HashString,
+						},
 
 						"destination_address_prefix": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
 
-						// "destination_address_prefixes": {
-						// 	Type:     schema.TypeSet,
-						// 	Optional: true,
-						// 	Elem:     &schema.Schema{Type: schema.TypeString},
-						// 	Set:      schema.HashString,
-						// },
+						"destination_address_prefixes": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Set:      schema.HashString,
+						},
 
 						// "destination_application_security_group_ids": {
 						// 	Type:     schema.TypeSet,
@@ -135,8 +132,8 @@ func resourceArmNetworkSecurityGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 							ValidateFunc: validation.StringInSlice([]string{
-								"Allow",
-								"Deny",
+								string(network.Allow),
+								string(network.Deny),
 							}, true),
 							DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
 						},
@@ -152,8 +149,8 @@ func resourceArmNetworkSecurityGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 							ValidateFunc: validation.StringInSlice([]string{
-								"Inbound",
-								"Outbound",
+								string(network.Inbound),
+								string(network.Outbound),
 							}, true),
 							DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
 						},
@@ -315,41 +312,41 @@ func expandAzureStackSecurityRules(d *schema.ResourceData) ([]network.SecurityRu
 
 		// Source and destination port ranges are not supported by the profile
 
-		// if r, ok := sgRule["source_port_ranges"].(*schema.Set); ok && r.Len() > 0 {
-		// 	var sourcePortRanges []string
-		// 	for _, v := range r.List() {
-		// 		s := v.(string)
-		// 		sourcePortRanges = append(sourcePortRanges, s)
-		// 	}
-		// 	properties.SourcePortRanges = &sourcePortRanges
-		// }
+		if r, ok := sgRule["source_port_ranges"].(*schema.Set); ok && r.Len() > 0 {
+			var sourcePortRanges []string
+			for _, v := range r.List() {
+				s := v.(string)
+				sourcePortRanges = append(sourcePortRanges, s)
+			}
+			properties.SourcePortRanges = &sourcePortRanges
+		}
 
-		// if r, ok := sgRule["destination_port_ranges"].(*schema.Set); ok && r.Len() > 0 {
-		// 	var destinationPortRanges []string
-		// 	for _, v := range r.List() {
-		// 		s := v.(string)
-		// 		destinationPortRanges = append(destinationPortRanges, s)
-		// 	}
-		// properties.DestinationPortRanges = &destinationPortRanges
-		// }
+		if r, ok := sgRule["destination_port_ranges"].(*schema.Set); ok && r.Len() > 0 {
+			var destinationPortRanges []string
+			for _, v := range r.List() {
+				s := v.(string)
+				destinationPortRanges = append(destinationPortRanges, s)
+			}
+			properties.DestinationPortRanges = &destinationPortRanges
+		}
 
-		// if r, ok := sgRule["source_address_prefixes"].(*schema.Set); ok && r.Len() > 0 {
-		// 	var sourceAddressPrefixes []string
-		// 	for _, v := range r.List() {
-		// 		s := v.(string)
-		// 		sourceAddressPrefixes = append(sourceAddressPrefixes, s)
-		// 	}
-		// 	// properties.SourceAddressPrefixes = &sourceAddressPrefixes
-		// }
+		if r, ok := sgRule["source_address_prefixes"].(*schema.Set); ok && r.Len() > 0 {
+			var sourceAddressPrefixes []string
+			for _, v := range r.List() {
+				s := v.(string)
+				sourceAddressPrefixes = append(sourceAddressPrefixes, s)
+			}
+			properties.SourceAddressPrefixes = &sourceAddressPrefixes
+		}
 
-		// if r, ok := sgRule["destination_address_prefixes"].(*schema.Set); ok && r.Len() > 0 {
-		// 	var destinationAddressPrefixes []string
-		// 	for _, v := range r.List() {
-		// 		s := v.(string)
-		// 		destinationAddressPrefixes = append(destinationAddressPrefixes, s)
-		// 	}
-		// 	// properties.DestinationAddressPrefixes = &destinationAddressPrefixes
-		// }
+		if r, ok := sgRule["destination_address_prefixes"].(*schema.Set); ok && r.Len() > 0 {
+			var destinationAddressPrefixes []string
+			for _, v := range r.List() {
+				s := v.(string)
+				destinationAddressPrefixes = append(destinationAddressPrefixes, s)
+			}
+			properties.DestinationAddressPrefixes = &destinationAddressPrefixes
+		}
 
 		// if r, ok := sgRule["source_application_security_group_ids"].(*schema.Set); ok && r.Len() > 0 {
 		// 	var sourceApplicationSecurityGroups []network.ApplicationSecurityGroup
@@ -382,6 +379,15 @@ func expandAzureStackSecurityRules(d *schema.ResourceData) ([]network.SecurityRu
 	return rules, nil
 }
 
+// NBO added logic to convert slice to set (copied from azurerm provider)
+func sliceToSet(slice []string) *schema.Set {
+	set := &schema.Set{F: schema.HashString}
+	for _, v := range slice {
+		set.Add(v)
+	}
+	return set
+}
+
 func flattenNetworkSecurityRules(rules *[]network.SecurityRule) []map[string]interface{} {
 	result := make([]map[string]interface{}, 0)
 
@@ -398,15 +404,15 @@ func flattenNetworkSecurityRules(rules *[]network.SecurityRule) []map[string]int
 				if props.DestinationAddressPrefix != nil {
 					sgRule["destination_address_prefix"] = *props.DestinationAddressPrefix
 				}
-				// if props.DestinationAddressPrefixes != nil {
-				// 	sgRule["destination_address_prefixes"] = sliceToSet(*props.DestinationAddressPrefixes)
-				// }
+				if props.DestinationAddressPrefixes != nil {
+					sgRule["destination_address_prefixes"] = sliceToSet(*props.DestinationAddressPrefixes)
+				}
 				if props.DestinationPortRange != nil {
 					sgRule["destination_port_range"] = *props.DestinationPortRange
 				}
-				// if props.DestinationPortRanges != nil {
-				// 	sgRule["destination_port_ranges"] = sliceToSet(*props.DestinationPortRanges)
-				// }
+				if props.DestinationPortRanges != nil {
+					sgRule["destination_port_ranges"] = sliceToSet(*props.DestinationPortRanges)
+				}
 
 				// destinationApplicationSecurityGroups := make([]string, 0)
 				// if props.DestinationApplicationSecurityGroups != nil {
@@ -419,9 +425,9 @@ func flattenNetworkSecurityRules(rules *[]network.SecurityRule) []map[string]int
 				if props.SourceAddressPrefix != nil {
 					sgRule["source_address_prefix"] = *props.SourceAddressPrefix
 				}
-				// if props.SourceAddressPrefixes != nil {
-				// 	sgRule["source_address_prefixes"] = sliceToSet(*props.SourceAddressPrefixes)
-				// }
+				if props.SourceAddressPrefixes != nil {
+					sgRule["source_address_prefixes"] = sliceToSet(*props.SourceAddressPrefixes)
+				}
 
 				// sourceApplicationSecurityGroups := make([]string, 0)
 				// if props.SourceApplicationSecurityGroups != nil {
@@ -434,9 +440,9 @@ func flattenNetworkSecurityRules(rules *[]network.SecurityRule) []map[string]int
 				if props.SourcePortRange != nil {
 					sgRule["source_port_range"] = *props.SourcePortRange
 				}
-				// if props.SourcePortRanges != nil {
-				// 	sgRule["source_port_ranges"] = sliceToSet(*props.SourcePortRanges)
-				// }
+				if props.SourcePortRanges != nil {
+					sgRule["source_port_ranges"] = sliceToSet(*props.SourcePortRanges)
+				}
 
 				sgRule["protocol"] = string(props.Protocol)
 				sgRule["priority"] = int(*props.Priority)

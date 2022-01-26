@@ -3,7 +3,9 @@ package azurestack
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,8 +13,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage"
+	"github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization"
+	vmScaleSet "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2016-04-01/dns"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
+	keyvaultmgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
+	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-11-01/subscriptions"
 	mainStorage "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
@@ -21,6 +28,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/httpclient"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
+
+type AuthorizationClient struct {
+	GroupsClient            *graphrbac.GroupsClient
+	RoleAssignmentsClient   *authorization.RoleAssignmentsClient
+	RoleDefinitionsClient   *authorization.RoleDefinitionsClient
+	ServicePrincipalsClient *graphrbac.ServicePrincipalsClient
+}
 
 // ArmClient contains the handles to all the specific Azure Resource Manager
 // resource classes' respective clients.
@@ -34,9 +48,6 @@ type ArmClient struct {
 	skipProviderRegistration bool
 
 	StopContext context.Context
-
-	// Authentication
-	servicePrincipalsClient graphrbac.ServicePrincipalsClient
 
 	// DNS
 	dnsClient   dns.RecordSetsClient
@@ -63,7 +74,7 @@ type ArmClient struct {
 	vmExtensionClient    compute.VirtualMachineExtensionsClient
 	vmClient             compute.VirtualMachinesClient
 	vmImageClient        compute.VirtualMachineImagesClient
-	vmScaleSetClient     compute.VirtualMachineScaleSetsClient
+	vmScaleSetClient     vmScaleSet.VirtualMachineScaleSetsClient
 	storageServiceClient storage.AccountsClient
 
 	// Network
@@ -74,6 +85,17 @@ type ArmClient struct {
 	loadBalancerClient network.LoadBalancersClient
 	routesClient       network.RoutesClient
 	routeTablesClient  network.RouteTablesClient
+	vnetPeeringClient  network.VirtualNetworkPeeringsClient
+
+	// KeyVault
+	keyVaultClient     keyvault.VaultsClient
+	keyVaultMgmtClient keyvaultmgmt.BaseClient
+
+	// Subscription
+	subscriptionsClient subscriptions.Client
+
+	//Authorization
+	authorizationClient AuthorizationClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -142,23 +164,44 @@ func getArmClient(authCfg *authentication.Config, tfVersion string, skipProvider
 		return nil, err
 	}
 
-	client.registerAuthentication(graphEndpoint, client.tenantId, graphAuth, sender)
+	// KeyVault Management Endpoint
+	keyVaultAuth := authCfg.BearerAuthorizerCallback(sender, oauth)
+
+	client.registerAuthorizationClients(graphEndpoint, endpoint, client.tenantId, client.subscriptionId, graphAuth, auth)
+
 	client.registerComputeClients(endpoint, client.subscriptionId, auth)
 	client.registerDNSClients(endpoint, client.subscriptionId, auth)
 	client.registerNetworkingClients(endpoint, client.subscriptionId, auth)
 	client.registerResourcesClients(endpoint, client.subscriptionId, auth)
 	client.registerStorageClients(endpoint, client.subscriptionId, auth)
+	client.registerSubscriptionsClient(endpoint, auth)
+	client.registerKeyVaultClients(endpoint, client.subscriptionId, auth)
+	client.registerKeyVaultMgmtClients(endpoint, client.subscriptionId, keyVaultAuth)
 
 	return &client, nil
 }
 
-func (c *ArmClient) registerAuthentication(graphEndpoint, tenantId string, graphAuth autorest.Authorizer, sender autorest.Sender) {
+func (c *ArmClient) registerAuthorizationClients(graphEndpoint, endpoint, tenantId, subscriptionId string, graphAuth, auth autorest.Authorizer) {
+
+	groupsClient := graphrbac.NewGroupsClientWithBaseURI(graphEndpoint, tenantId)
+	c.configureClient(&groupsClient.Client, graphAuth)
+
+	roleAssignmentsClient := authorization.NewRoleAssignmentsClientWithBaseURI(endpoint, subscriptionId)
+	c.configureClient(&roleAssignmentsClient.Client, auth)
+
+	roleDefinitionsClient := authorization.NewRoleDefinitionsClientWithBaseURI(endpoint, subscriptionId)
+	c.configureClient(&roleDefinitionsClient.Client, auth)
+
 	servicePrincipalsClient := graphrbac.NewServicePrincipalsClientWithBaseURI(graphEndpoint, tenantId)
-	setUserAgent(&servicePrincipalsClient.Client, c.terraformVersion)
-	servicePrincipalsClient.Authorizer = graphAuth
-	servicePrincipalsClient.Sender = sender
-	servicePrincipalsClient.SkipResourceProviderRegistration = c.skipProviderRegistration
-	c.servicePrincipalsClient = servicePrincipalsClient
+	c.configureClient(&servicePrincipalsClient.Client, graphAuth)
+
+	c.authorizationClient = AuthorizationClient{
+		GroupsClient:            &groupsClient,
+		RoleAssignmentsClient:   &roleAssignmentsClient,
+		RoleDefinitionsClient:   &roleDefinitionsClient,
+		ServicePrincipalsClient: &servicePrincipalsClient,
+	}
+
 }
 
 func (c *ArmClient) registerComputeClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
@@ -178,7 +221,7 @@ func (c *ArmClient) registerComputeClients(endpoint, subscriptionId string, auth
 	c.configureClient(&extensionsClient.Client, auth)
 	c.vmExtensionClient = extensionsClient
 
-	scaleSetsClient := compute.NewVirtualMachineScaleSetsClientWithBaseURI(endpoint, subscriptionId)
+	scaleSetsClient := vmScaleSet.NewVirtualMachineScaleSetsClientWithBaseURI(endpoint, subscriptionId)
 	c.configureClient(&scaleSetsClient.Client, auth)
 	c.vmScaleSetClient = scaleSetsClient
 
@@ -249,6 +292,10 @@ func (c *ArmClient) registerNetworkingClients(endpoint, subscriptionId string, a
 	routesClient := network.NewRoutesClientWithBaseURI(endpoint, subscriptionId)
 	c.configureClient(&routesClient.Client, auth)
 	c.routesClient = routesClient
+
+	peeringCLient := network.NewVirtualNetworkPeeringsClientWithBaseURI(endpoint, subscriptionId)
+	c.configureClient(&peeringCLient.Client, auth)
+	c.vnetPeeringClient = peeringCLient
 }
 
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
@@ -273,6 +320,24 @@ func (c *ArmClient) registerStorageClients(endpoint, subscriptionId string, auth
 	accountsClient := storage.NewAccountsClientWithBaseURI(endpoint, subscriptionId)
 	c.configureClient(&accountsClient.Client, auth)
 	c.storageServiceClient = accountsClient
+}
+
+func (c *ArmClient) registerSubscriptionsClient(endpoint string, auth autorest.Authorizer) {
+	subcriptionsClient := subscriptions.NewClientWithBaseURI(endpoint)
+	c.configureClient(&subcriptionsClient.Client, auth)
+	c.subscriptionsClient = subcriptionsClient
+}
+
+func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
+	keyVaultClient := keyvault.NewVaultsClientWithBaseURI(endpoint, subscriptionId)
+	c.configureClient(&keyVaultClient.Client, auth)
+	c.keyVaultClient = keyVaultClient
+}
+
+func (c *ArmClient) registerKeyVaultMgmtClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
+	keyVaultMgmtClient := keyvaultmgmt.New()
+	c.configureClient(&keyVaultMgmtClient.Client, auth)
+	c.keyVaultMgmtClient = keyVaultMgmtClient
 }
 
 var (
@@ -342,4 +407,172 @@ func (armClient *ArmClient) getBlobStorageClientForStorageAccount(ctx context.Co
 
 	blobClient := storageClient.GetBlobService()
 	return &blobClient, true, nil
+}
+
+var (
+	keyVaultsCache = map[string]keyVaultDetails{}
+	keysmith       = &sync.RWMutex{}
+	lock           = map[string]*sync.RWMutex{}
+)
+
+type keyVaultDetails struct {
+	keyVaultId       string
+	dataPlaneBaseUri string
+	resourceGroup    string
+}
+
+func (c *ArmClient) KeyVaultIDFromBaseUrl(ctx context.Context, keyVaultBaseUrl string) (*string, error) {
+	keyVaultName, err := c.parseKeyVaultNameFromBaseUrl(keyVaultBaseUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	cacheKey := c.cacheKeyForKeyVault(*keyVaultName)
+	keysmith.Lock()
+	if lock[cacheKey] == nil {
+		lock[cacheKey] = &sync.RWMutex{}
+	}
+	keysmith.Unlock()
+	lock[cacheKey].Lock()
+	defer lock[cacheKey].Unlock()
+
+	if v, ok := keyVaultsCache[cacheKey]; ok {
+		return &v.keyVaultId, nil
+	}
+
+	filter := fmt.Sprintf("resourceType eq 'Microsoft.KeyVault/vaults' and name eq '%s'", *keyVaultName)
+	result, err := c.resourcesClient.List(ctx, filter, "", utils.Int32(5))
+	if err != nil {
+		return nil, fmt.Errorf("listing resources matching %q: %+v", filter, err)
+	}
+
+	for result.NotDone() {
+		for _, v := range result.Values() {
+			if v.ID == nil {
+				continue
+			}
+
+			id, err := VaultID(*v.ID)
+			if err != nil {
+				return nil, fmt.Errorf("parsing %q: %+v", *v.ID, err)
+			}
+			if !strings.EqualFold(id.Name, *keyVaultName) {
+				continue
+			}
+
+			props, err := c.keyVaultClient.Get(ctx, id.ResourceGroup, id.Name)
+			if err != nil {
+				return nil, fmt.Errorf("retrieving %s: %+v", *id, err)
+			}
+			if props.Properties == nil || props.Properties.VaultURI == nil {
+				return nil, fmt.Errorf("retrieving %s: `properties.VaultUri` was nil", *id)
+			}
+
+			c.AddKeyVaultToCache(*id, *props.Properties.VaultURI)
+			return utils.String(id.ID()), nil
+		}
+
+		if err := result.NextWithContext(ctx); err != nil {
+			return nil, fmt.Errorf("iterating over results: %+v", err)
+		}
+	}
+
+	// we haven't found it, but Data Sources and Resources need to handle this error separately
+	return nil, nil
+}
+
+func (c *ArmClient) parseKeyVaultNameFromBaseUrl(input string) (*string, error) {
+	uri, err := url.Parse(input)
+	if err != nil {
+		return nil, err
+	}
+	// https://tharvey-keyvault.vault.azure.net/
+	segments := strings.Split(uri.Host, ".")
+	// if len(segments) != 4 { TODO: use keyvault suffix ?
+	// 	return nil, fmt.Errorf("expected a URI in the format `vaultname.vault.azure.net` but got %q", uri.Host)
+	// }
+	return &segments[0], nil
+}
+
+func (c *ArmClient) cacheKeyForKeyVault(name string) string {
+	return strings.ToLower(name)
+}
+
+func (c *ArmClient) AddKeyVaultToCache(keyVaultId VaultId, dataPlaneUri string) {
+	cacheKey := c.cacheKeyForKeyVault(keyVaultId.Name)
+	keysmith.Lock()
+	keyVaultsCache[cacheKey] = keyVaultDetails{
+		keyVaultId:       keyVaultId.ID(),
+		dataPlaneBaseUri: dataPlaneUri,
+		resourceGroup:    keyVaultId.ResourceGroup,
+	}
+	keysmith.Unlock()
+}
+
+func (c *ArmClient) PurgeKeyVaultCache(keyVaultId VaultId) {
+	cacheKey := c.cacheKeyForKeyVault(keyVaultId.Name)
+	keysmith.Lock()
+	if lock[cacheKey] == nil {
+		lock[cacheKey] = &sync.RWMutex{}
+	}
+	keysmith.Unlock()
+	lock[cacheKey].Lock()
+	delete(keyVaultsCache, cacheKey)
+	lock[cacheKey].Unlock()
+}
+
+func (c *ArmClient) BaseUriForKeyVault(ctx context.Context, keyVaultId VaultId) (*string, error) {
+	cacheKey := c.cacheKeyForKeyVault(keyVaultId.Name)
+	keysmith.Lock()
+	if lock[cacheKey] == nil {
+		lock[cacheKey] = &sync.RWMutex{}
+	}
+	keysmith.Unlock()
+	lock[cacheKey].Lock()
+	defer lock[cacheKey].Unlock()
+
+	resp, err := c.keyVaultClient.Get(ctx, keyVaultId.ResourceGroup, keyVaultId.Name)
+	if err != nil {
+		if utils.ResponseWasNotFound(resp.Response) {
+			return nil, fmt.Errorf("%s was not found", keyVaultId)
+		}
+		return nil, fmt.Errorf("retrieving %s: %+v", keyVaultId, err)
+	}
+
+	if resp.Properties == nil || resp.Properties.VaultURI == nil {
+		return nil, fmt.Errorf("`properties` was nil for %s", keyVaultId)
+	}
+
+	return resp.Properties.VaultURI, nil
+}
+
+func (c *ArmClient) KeyVaultExists(ctx context.Context, keyVaultId VaultId) (bool, error) {
+	cacheKey := c.cacheKeyForKeyVault(keyVaultId.Name)
+	keysmith.Lock()
+	if lock[cacheKey] == nil {
+		lock[cacheKey] = &sync.RWMutex{}
+	}
+	keysmith.Unlock()
+	lock[cacheKey].Lock()
+	defer lock[cacheKey].Unlock()
+
+	if _, ok := keyVaultsCache[cacheKey]; ok {
+		return true, nil
+	}
+
+	resp, err := c.keyVaultClient.Get(ctx, keyVaultId.ResourceGroup, keyVaultId.Name)
+	if err != nil {
+		if utils.ResponseWasNotFound(resp.Response) {
+			return false, nil
+		}
+		return false, fmt.Errorf("retrieving %s: %+v", keyVaultId, err)
+	}
+
+	if resp.Properties == nil || resp.Properties.VaultURI == nil {
+		return false, fmt.Errorf("`properties` was nil for %s", keyVaultId)
+	}
+
+	c.AddKeyVaultToCache(keyVaultId, *resp.Properties.VaultURI)
+
+	return true, nil
 }

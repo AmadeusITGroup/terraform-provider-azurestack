@@ -50,7 +50,7 @@ resource "azurestack_public_ip" "test" {
   name                         = "%s"
   location                     = "${azurestack_resource_group.test.location}"
   resource_group_name          = "${azurestack_resource_group.test.name}"
-  public_ip_address_allocation = "static"
+  allocation_method            = "static"
   domain_name_label            = "acctest-%d"
   idle_timeout_in_minutes      = 30
 
