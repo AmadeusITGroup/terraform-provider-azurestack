@@ -12,10 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-	azureValidate "github.com/terraform-providers/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/suppress"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	azureValidate "github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 var roleAssignmentResourceName = "azurestack_role_assignment"
@@ -111,10 +112,10 @@ func resourceArmRoleAssignmentCreate(d *schema.ResourceData, meta interface{}) e
 		roleName := v.(string)
 		roleDefinitions, err := roleDefinitionsClient.List(ctx, scope, fmt.Sprintf("roleName eq '%s'", roleName))
 		if err != nil {
-			return fmt.Errorf("Error loading Role Definition List: %+v", err)
+			return fmt.Errorf("loading Role Definition List: %+v", err)
 		}
 		if len(roleDefinitions.Values()) != 1 {
-			return fmt.Errorf("Error loading Role Definition List: could not find role '%s'", roleName)
+			return fmt.Errorf("loading Role Definition List: could not find role '%s'", roleName)
 		}
 		roleDefinitionId = *roleDefinitions.Values()[0].ID
 	} else {
@@ -127,7 +128,7 @@ func resourceArmRoleAssignmentCreate(d *schema.ResourceData, meta interface{}) e
 	if name == "" {
 		uuid, err := uuid.GenerateUUID()
 		if err != nil {
-			return fmt.Errorf("Error generating UUID for Role Assignment: %+v", err)
+			return fmt.Errorf("generating UUID for Role Assignment: %+v", err)
 		}
 
 		name = uuid
@@ -135,8 +136,8 @@ func resourceArmRoleAssignmentCreate(d *schema.ResourceData, meta interface{}) e
 
 	existing, err := roleAssignmentsClient.Get(ctx, scope, name)
 	if err != nil {
-		if !utils.ResponseWasNotFound(existing.Response) {
-			return fmt.Errorf("Error checking for presence of existing Role Assignment ID for %q (Scope %q): %+v", name, scope, err)
+		if !response.ResponseWasNotFound(existing.Response) {
+			return fmt.Errorf("checking for presence of existing Role Assignment ID for %q (Scope %q): %+v", name, scope, err)
 		}
 	}
 
@@ -175,13 +176,13 @@ func resourceArmRoleAssignmentRead(d *schema.ResourceData, meta interface{}) err
 
 	resp, err := client.GetByID(ctx, d.Id())
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			log.Printf("[DEBUG] Role Assignment ID %q was not found - removing from state", d.Id())
 			d.SetId("")
 			return nil
 		}
 
-		return fmt.Errorf("Error loading Role Assignment %q: %+v", d.Id(), err)
+		return fmt.Errorf("loading Role Assignment %q: %+v", d.Id(), err)
 	}
 
 	d.Set("name", resp.Name)
@@ -196,7 +197,7 @@ func resourceArmRoleAssignmentRead(d *schema.ResourceData, meta interface{}) err
 		if roleId := props.RoleDefinitionID; roleId != nil {
 			roleResp, err := roleDefinitionsClient.GetByID(ctx, *roleId)
 			if err != nil {
-				return fmt.Errorf("Error loading Role Definition %q: %+v", *roleId, err)
+				return fmt.Errorf("loading Role Definition %q: %+v", *roleId, err)
 			}
 
 			if roleProps := roleResp.RoleDefinitionProperties; roleProps != nil {
@@ -220,7 +221,7 @@ func resourceArmRoleAssignmentDelete(d *schema.ResourceData, meta interface{}) e
 
 	resp, err := client.Delete(ctx, id.scope, id.name)
 	if err != nil {
-		if !utils.ResponseWasNotFound(resp.Response) {
+		if !response.ResponseWasNotFound(resp.Response) {
 			return err
 		}
 	}
@@ -236,9 +237,9 @@ func retryRoleAssignmentsClient(d *schema.ResourceData, scope string, name strin
 
 		resp, err := roleAssignmentsClient.Create(ctx, scope, name, properties)
 		if err != nil {
-			if utils.ResponseErrorIsRetryable(err) {
+			if response.ResponseErrorIsRetryable(err) {
 				return resource.RetryableError(err)
-			} else if utils.ResponseWasStatusCode(resp.Response, 400) && strings.Contains(err.Error(), "PrincipalNotFound") {
+			} else if response.ResponseWasStatusCode(resp.Response, 400) && strings.Contains(err.Error(), "PrincipalNotFound") {
 				// When waiting for service principal to become available
 				return resource.RetryableError(err)
 			}
@@ -294,7 +295,7 @@ func roleAssignmentCreateStateRefreshFunc(ctx context.Context, client *authoriza
 	return func() (interface{}, string, error) {
 		resp, err := client.GetByID(ctx, roleID)
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return resp, "pending", nil
 			}
 			return resp, "failed", err

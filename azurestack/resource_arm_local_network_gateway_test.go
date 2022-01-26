@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/go-azure-helpers/response"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/respons"
 )
 
 func TestAccAzureStackLocalNetworkGateway_basic(t *testing.T) {
@@ -228,11 +227,11 @@ func testCheckAzureStackLocalNetworkGatewayExists(name string) resource.TestChec
 
 		resp, err := client.Get(ctx, resGrp, localNetName)
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return fmt.Errorf("Local network gateway %q (resource group %q) does not exist on Azure.", localNetName, resGrp)
 			}
 
-			return fmt.Errorf("Error reading the state of local network gateway %q: %+v", localNetName, err)
+			return fmt.Errorf("reading the state of local network gateway %q: %+v", localNetName, err)
 		}
 
 		return nil
@@ -264,12 +263,12 @@ func testCheckAzureStackLocalNetworkGatewayDisappears(name string) resource.Test
 			if response.WasNotFound(future.Response()) {
 				return fmt.Errorf("Local network gateway %q (resource group %q) does not exist on Azure.", localNetName, resourceGroup)
 			}
-			return fmt.Errorf("Error deleting the state of local network gateway %q: %+v", localNetName, err)
+			return fmt.Errorf("deleting the state of local network gateway %q: %+v", localNetName, err)
 		}
 
 		err = future.WaitForCompletionRef(ctx, client.Client)
 		if err != nil {
-			return fmt.Errorf("Error waiting for deletion of the local network gateway %q to complete: %+v", localNetName, err)
+			return fmt.Errorf("waiting for deletion of the local network gateway %q to complete: %+v", localNetName, err)
 		}
 
 		return nil
@@ -294,7 +293,7 @@ func testCheckAzureStackLocalNetworkGatewayDestroy(s *terraform.State) error {
 		resp, err := client.Get(ctx, resourceGroup, localNetName)
 
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return nil
 			}
 

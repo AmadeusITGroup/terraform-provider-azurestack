@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func dataSourceArmKeyVaultSecret() *schema.Resource {
@@ -63,16 +63,16 @@ func dataSourceArmKeyVaultSecretRead(d *schema.ResourceData, meta interface{}) e
 
 	keyVaultBaseUri, err := meta.(*ArmClient).BaseUriForKeyVault(ctx, *keyVaultId)
 	if err != nil {
-		return fmt.Errorf("Error looking up Secret %q vault url from id %q: %+v", name, *keyVaultId, err)
+		return fmt.Errorf("looking up Secret %q vault url from id %q: %+v", name, *keyVaultId, err)
 	}
 
 	// we always want to get the latest version
 	resp, err := client.GetSecret(ctx, *keyVaultBaseUri, name, "")
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			return fmt.Errorf("KeyVault Secret %q (KeyVault URI %q) does not exist", name, *keyVaultBaseUri)
 		}
-		return fmt.Errorf("Error making Read request on Azure KeyVault Secret %s: %+v", name, err)
+		return fmt.Errorf("making Read request on Azure KeyVault Secret %s: %+v", name, err)
 	}
 
 	// the version may have changed, so parse the updated id

@@ -9,9 +9,10 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func resourceArmNetworkInterfaceBackendAddressPoolAssociation() *schema.Resource {
@@ -80,7 +81,7 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationCreate(d *schema.Resou
 
 	read, err := client.Get(ctx, resourceGroup, networkInterfaceName, "")
 	if err != nil {
-		if utils.ResponseWasNotFound(read.Response) {
+		if response.ResponseWasNotFound(read.Response) {
 			return fmt.Errorf("%s was not found!", *nicId)
 		}
 
@@ -168,7 +169,7 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationRead(d *schema.Resourc
 
 	read, err := client.Get(ctx, resourceGroup, networkInterfaceName, "")
 	if err != nil {
-		if utils.ResponseWasNotFound(read.Response) {
+		if response.ResponseWasNotFound(read.Response) {
 			log.Printf("Network Interface %q (Resource Group %q) was not found - removing from state!", networkInterfaceName, resourceGroup)
 			d.SetId("")
 			return nil
@@ -251,7 +252,7 @@ func resourceNetworkInterfaceBackendAddressPoolAssociationDelete(d *schema.Resou
 
 	read, err := client.Get(ctx, resourceGroup, networkInterfaceName, "")
 	if err != nil {
-		if utils.ResponseWasNotFound(read.Response) {
+		if response.ResponseWasNotFound(read.Response) {
 			return fmt.Errorf("Network Interface %q (Resource Group %q) was not found!", networkInterfaceName, resourceGroup)
 		}
 

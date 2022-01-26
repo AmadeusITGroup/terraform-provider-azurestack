@@ -10,8 +10,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/compute/mgmt/compute"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func dataSourceArmImage() *schema.Resource {
@@ -137,7 +137,7 @@ func dataSourceImageRead(d *schema.ResourceData, meta interface{}) error {
 	if !nameRegexOk {
 		var err error
 		if img, err = client.Get(ctx, resGroup, name, ""); err != nil {
-			if utils.ResponseWasNotFound(img.Response) {
+			if response.ResponseWasNotFound(img.Response) {
 				return fmt.Errorf("image %q was not found in resource group %q", name, resGroup)
 			}
 			return fmt.Errorf("[ERROR] Error making Read request on Azure Image %q (resource group %q): %+v", name, resGroup, err)
@@ -148,7 +148,7 @@ func dataSourceImageRead(d *schema.ResourceData, meta interface{}) error {
 		list := make([]compute.Image, 0)
 		resp, err := client.ListByResourceGroupComplete(ctx, resGroup)
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response().Response) {
+			if response.ResponseWasNotFound(resp.Response().Response) {
 				return fmt.Errorf("No Images were found for Resource Group %q", resGroup)
 			}
 			return fmt.Errorf("[ERROR] Error getting list of images (resource group %q): %+v", resGroup, err)

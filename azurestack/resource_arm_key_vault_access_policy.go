@@ -11,10 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 	uuid "github.com/satori/go.uuid"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
 func resourceArmKeyVaultAccessPolicy() *schema.Resource {
@@ -85,7 +86,7 @@ func resourceArmKeyVaultAccessPolicyCreateOrDelete(d *schema.ResourceData, meta 
 	tenantIdRaw := d.Get("tenant_id").(string)
 	tenantId, err := uuid.FromString(tenantIdRaw)
 	if err != nil {
-		return fmt.Errorf("Error parsing Tenant ID %q as a UUID: %+v", tenantIdRaw, err)
+		return fmt.Errorf("parsing Tenant ID %q as a UUID: %+v", tenantIdRaw, err)
 	}
 
 	applicationIdRaw := d.Get("application_id").(string)
@@ -108,13 +109,13 @@ func resourceArmKeyVaultAccessPolicyCreateOrDelete(d *schema.ResourceData, meta 
 		// which previously existed was deleted with the key vault, so reflect that in
 		// state. If this is a new resource and key vault does not exist, it's likely
 		// a bad ID was given.
-		if utils.ResponseWasNotFound(keyVault.Response) && !d.IsNewResource() {
+		if response.ResponseWasNotFound(keyVault.Response) && !d.IsNewResource() {
 			log.Printf("[DEBUG] Parent Key Vault %q was not found in Resource Group %q - removing from state!", vaultName, resourceGroup)
 			d.SetId("")
 			return nil
 		}
 
-		return fmt.Errorf("Error retrieving Key Vault %q (Resource Group %q): %+v", vaultName, resourceGroup, err)
+		return fmt.Errorf("retrieving Key Vault %q (Resource Group %q): %+v", vaultName, resourceGroup, err)
 	}
 
 	// This is because azure doesn't have an 'id' for a keyvault access policy
@@ -132,11 +133,11 @@ func resourceArmKeyVaultAccessPolicyCreateOrDelete(d *schema.ResourceData, meta 
 	if d.IsNewResource() {
 		props := keyVault.Properties
 		if props == nil {
-			return fmt.Errorf("Error parsing Key Vault: `properties` was nil")
+			return fmt.Errorf("parsing Key Vault: `properties` was nil")
 		}
 
 		if props.AccessPolicies == nil {
-			return fmt.Errorf("Error parsing Key Vault: `properties.AccessPolicy` was nil")
+			return fmt.Errorf("parsing Key Vault: `properties.AccessPolicy` was nil")
 		}
 
 		for _, policy := range *props.AccessPolicies {
@@ -184,7 +185,7 @@ func resourceArmKeyVaultAccessPolicyCreateOrDelete(d *schema.ResourceData, meta 
 	if applicationIdRaw != "" {
 		applicationId, err2 := uuid.FromString(applicationIdRaw)
 		if err2 != nil {
-			return fmt.Errorf("Error parsing Application ID %q as a UUID: %+v", applicationIdRaw, err2)
+			return fmt.Errorf("parsing Application ID %q as a UUID: %+v", applicationIdRaw, err2)
 		}
 
 		accessPolicy.ApplicationID = &applicationId
@@ -200,7 +201,7 @@ func resourceArmKeyVaultAccessPolicyCreateOrDelete(d *schema.ResourceData, meta 
 	}
 
 	if _, err = client.UpdateAccessPolicy(ctx, resourceGroup, vaultName, action, parameters); err != nil {
-		return fmt.Errorf("Error updating Access Policy (Object ID %q / Application ID %q) for Key Vault %q (Resource Group %q): %+v", objectId, applicationIdRaw, vaultName, resourceGroup, err)
+		return fmt.Errorf("updating Access Policy (Object ID %q / Application ID %q) for Key Vault %q (Resource Group %q): %+v", objectId, applicationIdRaw, vaultName, resourceGroup, err)
 	}
 	stateConf := &resource.StateChangeConf{
 		Pending:                   []string{"notfound", "vaultnotfound"},
@@ -227,7 +228,7 @@ func resourceArmKeyVaultAccessPolicyCreateOrDelete(d *schema.ResourceData, meta 
 
 	read, err := client.Get(ctx, resourceGroup, vaultName)
 	if err != nil {
-		return fmt.Errorf("Error retrieving Key Vault %q (Resource Group %q): %+v", vaultName, resourceGroup, err)
+		return fmt.Errorf("retrieving Key Vault %q (Resource Group %q): %+v", vaultName, resourceGroup, err)
 	}
 
 	if read.ID == nil {
@@ -269,13 +270,13 @@ func resourceArmKeyVaultAccessPolicyRead(d *schema.ResourceData, meta interface{
 
 	resp, err := client.Get(ctx, resGroup, vaultName)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			log.Printf("[ERROR] Key Vault %q (Resource Group %q) was not found - removing from state", vaultName, resGroup)
 			d.SetId("")
 			return nil
 		}
 
-		return fmt.Errorf("Error making Read request on Azure KeyVault %q (Resource Group %q): %+v", vaultName, resGroup, err)
+		return fmt.Errorf("making Read request on Azure KeyVault %q (Resource Group %q): %+v", vaultName, resGroup, err)
 	}
 
 	policy := FindKeyVaultAccessPolicy(resp.Properties.AccessPolicies, objectId, applicationId)
@@ -300,22 +301,22 @@ func resourceArmKeyVaultAccessPolicyRead(d *schema.ResourceData, meta interface{
 	if permissions := policy.Permissions; permissions != nil {
 		certificatePermissions := flattenCertificatePermissions(permissions.Certificates)
 		if err := d.Set("certificate_permissions", certificatePermissions); err != nil {
-			return fmt.Errorf("Error setting `certificate_permissions`: %+v", err)
+			return fmt.Errorf("setting `certificate_permissions`: %+v", err)
 		}
 
 		keyPermissions := flattenKeyPermissions(permissions.Keys)
 		if err := d.Set("key_permissions", keyPermissions); err != nil {
-			return fmt.Errorf("Error setting `key_permissions`: %+v", err)
+			return fmt.Errorf("setting `key_permissions`: %+v", err)
 		}
 
 		secretPermissions := flattenSecretPermissions(permissions.Secrets)
 		if err := d.Set("secret_permissions", secretPermissions); err != nil {
-			return fmt.Errorf("Error setting `secret_permissions`: %+v", err)
+			return fmt.Errorf("setting `secret_permissions`: %+v", err)
 		}
 
 		storagePermissions := flattenStoragePermissions(permissions.Storage)
 		if err := d.Set("storage_permissions", storagePermissions); err != nil {
-			return fmt.Errorf("Error setting `storage_permissions`: %+v", err)
+			return fmt.Errorf("setting `storage_permissions`: %+v", err)
 		}
 	}
 
@@ -351,7 +352,7 @@ func accessPolicyRefreshFunc(ctx context.Context, client *keyvault.VaultsClient,
 
 		read, err := client.Get(ctx, resourceGroup, vaultName)
 		if err != nil {
-			if utils.ResponseWasNotFound(read.Response) {
+			if response.ResponseWasNotFound(read.Response) {
 				return "vaultnotfound", "vaultnotfound", fmt.Errorf("failed to find vault %q (resource group %q)", vaultName, resourceGroup)
 			}
 		}

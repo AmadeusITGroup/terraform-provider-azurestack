@@ -6,7 +6,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2016-04-01/dns"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func resourceArmDnsARecord() *schema.Resource {
@@ -105,11 +105,11 @@ func resourceArmDnsARecordRead(d *schema.ResourceData, meta interface{}) error {
 
 	resp, err := dnsClient.Get(ctx, resGroup, zoneName, name, dns.A)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error reading DNS A record %s: %+v", name, err)
+		return fmt.Errorf("reading DNS A record %s: %+v", name, err)
 	}
 
 	d.Set("name", name)
@@ -140,7 +140,7 @@ func resourceArmDnsARecordDelete(d *schema.ResourceData, meta interface{}) error
 
 	resp, error := dnsClient.Delete(ctx, resGroup, zoneName, name, dns.A, "")
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error deleting DNS A Record %s: %+v", name, error)
+		return fmt.Errorf("deleting DNS A Record %s: %+v", name, error)
 	}
 
 	return nil

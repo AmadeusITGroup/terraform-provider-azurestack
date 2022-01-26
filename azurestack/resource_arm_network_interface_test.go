@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/respons"
 )
 
 func TestAccAzureStackNetworkInterface_basic(t *testing.T) {
@@ -411,7 +411,7 @@ func testCheckAzureStackNetworkInterfaceExists(name string) resource.TestCheckFu
 
 		resp, err := client.Get(ctx, resourceGroup, name, "")
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return fmt.Errorf("Bad: Network Interface %q (resource group: %q) does not exist", name, resourceGroup)
 			}
 
@@ -441,12 +441,12 @@ func testCheckAzureStackNetworkInterfaceDisappears(name string) resource.TestChe
 
 		future, err := client.Delete(ctx, resourceGroup, name)
 		if err != nil {
-			return fmt.Errorf("Error deleting Network Interface %q (Resource Group %q): %+v", name, resourceGroup, err)
+			return fmt.Errorf("deleting Network Interface %q (Resource Group %q): %+v", name, resourceGroup, err)
 		}
 
 		err = future.WaitForCompletionRef(ctx, client.Client)
 		if err != nil {
-			return fmt.Errorf("Error waiting for the deletion of Network Interface %q (Resource Group %q): %+v", name, resourceGroup, err)
+			return fmt.Errorf("waiting for the deletion of Network Interface %q (Resource Group %q): %+v", name, resourceGroup, err)
 		}
 
 		return nil
@@ -467,7 +467,7 @@ func testCheckAzureStackNetworkInterfaceDestroy(s *terraform.State) error {
 
 		resp, err := client.Get(ctx, resourceGroup, name, "")
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return nil
 			}
 

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func dataSourceArmSubscription() *schema.Resource {
@@ -69,11 +69,11 @@ func dataSourceSubscriptionRead(d *schema.ResourceData, meta interface{}) error 
 
 	resp, err := groupClient.Get(ctx, subscriptionId)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			return fmt.Errorf("Error: default tags for Subscription %q was not found", subscriptionId)
 		}
 
-		return fmt.Errorf("Error reading default tags for Subscription: %+v", err)
+		return fmt.Errorf("reading default tags for Subscription: %+v", err)
 	}
 
 	d.SetId(*resp.ID)

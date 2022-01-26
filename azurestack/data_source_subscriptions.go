@@ -90,7 +90,7 @@ func dataSourceSubscriptionsRead(d *schema.ResourceData, meta interface{}) error
 	// ListComplete returns an iterator struct
 	results, err := subClient.ListComplete(ctx)
 	if err != nil {
-		return fmt.Errorf("Error listing subscriptions: %+v", err)
+		return fmt.Errorf("listing subscriptions: %+v", err)
 	}
 
 	// iterate across each subscriptions and append them to slice
@@ -125,7 +125,7 @@ func dataSourceSubscriptionsRead(d *schema.ResourceData, meta interface{}) error
 		}
 
 		if err = results.Next(); err != nil {
-			return fmt.Errorf("Error going to next subscriptions value: %+v", err)
+			return fmt.Errorf("going to next subscriptions value: %+v", err)
 		}
 
 		// check if the display name prefix matches the given input
@@ -151,7 +151,7 @@ func dataSourceSubscriptionsRead(d *schema.ResourceData, meta interface{}) error
 
 	d.SetId("subscriptions-" + armClient.tenantId)
 	if err = d.Set("subscriptions", subscriptions); err != nil {
-		return fmt.Errorf("Error setting `subscriptions`: %+v", err)
+		return fmt.Errorf("setting `subscriptions`: %+v", err)
 	}
 
 	return nil

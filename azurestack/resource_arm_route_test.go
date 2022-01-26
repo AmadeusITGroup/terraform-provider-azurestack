@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/respons"
 )
 
 func TestAccAzureStackRoute_basic(t *testing.T) {
@@ -104,7 +104,7 @@ func testCheckAzureStackRouteExists(name string) resource.TestCheckFunc {
 
 		resp, err := client.Get(ctx, resourceGroup, rtName, name)
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return fmt.Errorf("Bad: Route %q (resource group: %q) does not exist", name, resourceGroup)
 			}
 			return fmt.Errorf("Bad: Get on routesClient: %+v", err)
@@ -134,12 +134,12 @@ func testCheckAzureStackRouteDisappears(name string) resource.TestCheckFunc {
 
 		future, err := client.Delete(ctx, resourceGroup, rtName, name)
 		if err != nil {
-			return fmt.Errorf("Error deleting Route %q (Route Table %q / Resource Group %q): %+v", name, rtName, resourceGroup, err)
+			return fmt.Errorf("deleting Route %q (Route Table %q / Resource Group %q): %+v", name, rtName, resourceGroup, err)
 		}
 
 		err = future.WaitForCompletionRef(ctx, client.Client)
 		if err != nil {
-			return fmt.Errorf("Error waiting for deletion of Route %q (Route Table %q / Resource Group %q): %+v", name, rtName, resourceGroup, err)
+			return fmt.Errorf("waiting for deletion of Route %q (Route Table %q / Resource Group %q): %+v", name, rtName, resourceGroup, err)
 		}
 
 		return nil

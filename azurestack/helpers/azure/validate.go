@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/go-uuid"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
 )
 
 func ValidateResourceID(i interface{}, k string) (_ []string, errors []error) {
@@ -22,7 +22,7 @@ func ValidateResourceID(i interface{}, k string) (_ []string, errors []error) {
 	return
 }
 
-//true for a resource ID or an empty string
+// true for a resource ID or an empty string
 func ValidateResourceIDOrEmpty(i interface{}, k string) (_ []string, errors []error) {
 	v, ok := i.(string)
 	if !ok {

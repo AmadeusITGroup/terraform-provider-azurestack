@@ -14,8 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func resourceArmKeyVaultKey() *schema.Resource {
@@ -171,13 +172,13 @@ func resourceArmKeyVaultKeyCreate(d *schema.ResourceData, meta interface{}) erro
 
 	keyVaultBaseUri, err := meta.(*ArmClient).BaseUriForKeyVault(ctx, *keyVaultId)
 	if err != nil {
-		return fmt.Errorf("Error looking up Key %q vault url from id %q: %+v", name, *keyVaultId, err)
+		return fmt.Errorf("looking up Key %q vault url from id %q: %+v", name, *keyVaultId, err)
 	}
 
 	existing, err := client.GetKey(ctx, *keyVaultBaseUri, name, "")
 	if err != nil {
-		if !utils.ResponseWasNotFound(existing.Response) {
-			return fmt.Errorf("Error checking for presence of existing Key %q (Key Vault %q): %s", name, *keyVaultBaseUri, err)
+		if !response.ResponseWasNotFound(existing.Response) {
+			return fmt.Errorf("checking for presence of existing Key %q (Key Vault %q): %s", name, *keyVaultBaseUri, err)
 		}
 	}
 
@@ -228,7 +229,7 @@ func resourceArmKeyVaultKeyCreate(d *schema.ResourceData, meta interface{}) erro
 
 	if _, err := client.CreateKey(ctx, *keyVaultBaseUri, name, parameters); err != nil {
 		// NOTE: features unsupported
-		// if meta.(*ArmClient).Features.KeyVault.RecoverSoftDeletedKeyVaults && utils.ResponseWasConflict(resp.Response) {
+		// if meta.(*ArmClient).Features.KeyVault.RecoverSoftDeletedKeyVaults && response.ResponseWasConflict(resp.Response) {
 		// 	recoveredKey, err := client.RecoverDeletedKey(ctx, *keyVaultBaseUri, name)
 		// 	if err != nil {
 		// 		return err
@@ -246,14 +247,14 @@ func resourceArmKeyVaultKeyCreate(d *schema.ResourceData, meta interface{}) erro
 		// 		}
 
 		// 		if _, err := stateConf.WaitForState(); err != nil {
-		// 			return fmt.Errorf("Error waiting for Key Vault Secret %q to become available: %s", name, err)
+		// 			return fmt.Errorf("waiting for Key Vault Secret %q to become available: %s", name, err)
 		// 		}
 		// 		log.Printf("[DEBUG] Key %q recovered with ID: %q", name, *kid)
 		// 	}
 		// } else {
-		// 	return fmt.Errorf("Error Creating Key: %+v", err)
+		// 	return fmt.Errorf("Creating Key: %+v", err)
 		// }
-		return fmt.Errorf("Error Creating Key: %+v", err)
+		return fmt.Errorf("Creating Key: %+v", err)
 	}
 
 	// "" indicates the latest version
@@ -293,7 +294,7 @@ func resourceArmKeyVaultKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 
 	ok, err := meta.(*ArmClient).KeyVaultExists(ctx, *keyVaultId)
 	if err != nil {
-		return fmt.Errorf("Error checking if key vault %q for Key %q in Vault at url %q exists: %v", *keyVaultId, id.Name, id.KeyVaultBaseUrl, err)
+		return fmt.Errorf("checking if key vault %q for Key %q in Vault at url %q exists: %v", *keyVaultId, id.Name, id.KeyVaultBaseUrl, err)
 	}
 	if !ok {
 		log.Printf("[DEBUG] Key %q Key Vault %q was not found in Key Vault at URI %q - removing from state", id.Name, *keyVaultId, id.KeyVaultBaseUrl)
@@ -343,7 +344,7 @@ func resourceArmKeyVaultKeyRead(d *schema.ResourceData, meta interface{}) error 
 
 	keyVaultIdRaw, err := meta.(*ArmClient).KeyVaultIDFromBaseUrl(ctx, id.KeyVaultBaseUrl)
 	if err != nil {
-		return fmt.Errorf("Error retrieving the Resource ID the Key Vault at URL %q: %s", id.KeyVaultBaseUrl, err)
+		return fmt.Errorf("retrieving the Resource ID the Key Vault at URL %q: %s", id.KeyVaultBaseUrl, err)
 	}
 	if keyVaultIdRaw == nil {
 		log.Printf("[DEBUG] Unable to determine the Resource ID for the Key Vault at URL %q - removing from state!", id.KeyVaultBaseUrl)
@@ -357,7 +358,7 @@ func resourceArmKeyVaultKeyRead(d *schema.ResourceData, meta interface{}) error 
 
 	ok, err := meta.(*ArmClient).KeyVaultExists(ctx, *keyVaultId)
 	if err != nil {
-		return fmt.Errorf("Error checking if key vault %q for Key %q in Vault at url %q exists: %v", *keyVaultId, id.Name, id.KeyVaultBaseUrl, err)
+		return fmt.Errorf("checking if key vault %q for Key %q in Vault at url %q exists: %v", *keyVaultId, id.Name, id.KeyVaultBaseUrl, err)
 	}
 	if !ok {
 		log.Printf("[DEBUG] Key %q Key Vault %q was not found in Key Vault at URI %q - removing from state", id.Name, *keyVaultId, id.KeyVaultBaseUrl)
@@ -367,7 +368,7 @@ func resourceArmKeyVaultKeyRead(d *schema.ResourceData, meta interface{}) error 
 
 	resp, err := client.GetKey(ctx, id.KeyVaultBaseUrl, id.Name, "")
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			log.Printf("[DEBUG] Key %q was not found in Key Vault at URI %q - removing from state", id.Name, id.KeyVaultBaseUrl)
 			d.SetId("")
 			return nil
@@ -431,7 +432,7 @@ func resourceArmKeyVaultKeyDelete(d *schema.ResourceData, meta interface{}) erro
 
 	keyVaultIdRaw, err := meta.(*ArmClient).KeyVaultIDFromBaseUrl(ctx, id.KeyVaultBaseUrl)
 	if err != nil {
-		return fmt.Errorf("Error retrieving the Resource ID the Key Vault at URL %q: %s", id.KeyVaultBaseUrl, err)
+		return fmt.Errorf("retrieving the Resource ID the Key Vault at URL %q: %s", id.KeyVaultBaseUrl, err)
 	}
 	if keyVaultIdRaw == nil {
 		return fmt.Errorf("Unable to determine the Resource ID for the Key Vault at URL %q", id.KeyVaultBaseUrl)
@@ -443,7 +444,7 @@ func resourceArmKeyVaultKeyDelete(d *schema.ResourceData, meta interface{}) erro
 
 	ok, err := meta.(*ArmClient).KeyVaultExists(ctx, *keyVaultId)
 	if err != nil {
-		return fmt.Errorf("Error checking if key vault %q for Key %q in Vault at url %q exists: %v", *keyVaultId, id.Name, id.KeyVaultBaseUrl, err)
+		return fmt.Errorf("checking if key vault %q for Key %q in Vault at url %q exists: %v", *keyVaultId, id.Name, id.KeyVaultBaseUrl, err)
 	}
 	if !ok {
 		log.Printf("[DEBUG] Key %q Key Vault %q was not found in Key Vault at URI %q - removing from state", id.Name, *keyVaultId, id.KeyVaultBaseUrl)
@@ -531,7 +532,7 @@ func deleteAndOptionallyPurge(ctx context.Context, description string, shouldPur
 
 	log.Printf("[DEBUG] Deleting %s..", description)
 	if resp, err := helper.DeleteNestedItem(ctx); err != nil {
-		if utils.ResponseWasNotFound(resp) {
+		if response.ResponseWasNotFound(resp) {
 			return nil
 		}
 
@@ -544,7 +545,7 @@ func deleteAndOptionallyPurge(ctx context.Context, description string, shouldPur
 		Refresh: func() (interface{}, string, error) {
 			item, err := helper.NestedItemHasBeenDeleted(ctx)
 			if err != nil {
-				if utils.ResponseWasNotFound(item) {
+				if response.ResponseWasNotFound(item) {
 					return item, "NotFound", nil
 				}
 
@@ -579,7 +580,7 @@ func deleteAndOptionallyPurge(ctx context.Context, description string, shouldPur
 		Refresh: func() (interface{}, string, error) {
 			item, err := helper.NestedItemHasBeenPurged(ctx)
 			if err != nil {
-				if utils.ResponseWasNotFound(item) {
+				if response.ResponseWasNotFound(item) {
 					return item, "NotFound", nil
 				}
 

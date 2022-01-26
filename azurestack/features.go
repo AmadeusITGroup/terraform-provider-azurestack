@@ -13,7 +13,7 @@ import (
 //
 // This feature-toggle defaults to off in 1.x versions of the Azure Provider, however this will
 // become the default behaviour in version 2.0 of the Azure Provider. As outlined in the announcement
-// for v2.0 of the Azure Provider: https://github.com/terraform-providers/terraform-provider-azurerm/issues/2807
+// for v2.0 of the Azure Provider: https://github.com/hashicorp/terraform-provider-azurerm/issues/2807
 //
 // Operators wishing to adopt this behaviour can opt-into this behaviour in 1.x versions of the
 // Azure Provider by setting the Environment Variable 'ARM_PROVIDER_CUSTOM_TIMEOUTS' to 'true'
@@ -31,7 +31,7 @@ func SupportsCustomTimeouts() bool {
 //
 // This feature-toggle defaults to off in 1.x versions of the Azure Provider, however this will
 // become the default behaviour in version 2.0 of the Azure Provider. As outlined in the announcement
-// for v2.0 of the Azure Provider: https://github.com/terraform-providers/terraform-provider-azurerm/issues/2807
+// for v2.0 of the Azure Provider: https://github.com/hashicorp/terraform-provider-azurerm/issues/2807
 //
 // Operators wishing to adopt this behaviour can opt-into this behaviour in 1.x versions of the
 // Azure Provider by setting the Environment Variable 'ARM_PROVIDER_STRICT' to 'true'

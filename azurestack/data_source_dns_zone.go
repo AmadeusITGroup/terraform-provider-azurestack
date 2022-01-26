@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func dataSourceArmDnsZone() *schema.Resource {
@@ -57,10 +57,10 @@ func dataSourceArmDnsZoneRead(d *schema.ResourceData, meta interface{}) error {
 
 	resp, err := client.Get(ctx, resGroup, name)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			return fmt.Errorf("Error: DNS Zone %q (Resource Group %q) was not found", name, resGroup)
 		}
-		return fmt.Errorf("Error making Read request on Azure dns zone %s: %s", name, err)
+		return fmt.Errorf("making Read request on Azure dns zone %s: %s", name, err)
 	}
 
 	d.SetId(*resp.ID)

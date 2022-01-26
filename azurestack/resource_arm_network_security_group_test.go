@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/respons"
 )
 
 func TestAccAzureStackNetworkSecurityGroup_basic(t *testing.T) {
@@ -234,7 +234,7 @@ func testCheckAzureStackNetworkSecurityGroupExists(name string) resource.TestChe
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 		resp, err := client.Get(ctx, resourceGroup, sgName, "")
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return fmt.Errorf("Bad: Network Security Group %q (resource group: %q) does not exist", name, resourceGroup)
 			}
 
@@ -264,11 +264,11 @@ func testCheckAzureStackNetworkSecurityGroupDisappears(name string) resource.Tes
 		ctx := testAccProvider.Meta().(*ArmClient).StopContext
 		future, err := client.Delete(ctx, resourceGroup, sgName)
 		if err != nil {
-			return fmt.Errorf("Error deleting NSG %q (Resource Group %q): %+v", sgName, resourceGroup, err)
+			return fmt.Errorf("deleting NSG %q (Resource Group %q): %+v", sgName, resourceGroup, err)
 		}
 		err = future.WaitForCompletionRef(ctx, client.Client)
 		if err != nil {
-			return fmt.Errorf("Error deleting NSG %q (Resource Group %q): %+v", sgName, resourceGroup, err)
+			return fmt.Errorf("deleting NSG %q (Resource Group %q): %+v", sgName, resourceGroup, err)
 		}
 
 		return nil
@@ -290,7 +290,7 @@ func testCheckAzureStackNetworkSecurityGroupDestroy(s *terraform.State) error {
 		resp, err := client.Get(ctx, resourceGroup, name, "")
 
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return nil
 			}
 			return err

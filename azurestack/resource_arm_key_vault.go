@@ -11,16 +11,16 @@ import (
 
 	KeyVaultMgmt "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
-	"github.com/hashicorp/go-azure-helpers/response"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/tf"
+	commonValidate "github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/validate"
+	localAzure "github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 	uuid "github.com/satori/go.uuid"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
-	commonValidate "github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-	localAzure "github.com/terraform-providers/terraform-provider-azurestack/azurestack/helpers/azure"
 )
 
 // As can be seen in the API definition, the Sku Family only supports the value
@@ -258,12 +258,12 @@ func resourceArmKeyVaultCreate(d *schema.ResourceData, meta interface{}) error {
 	// check for the presence of an existing, live one which should be imported into the state
 	existing, err := client.Get(ctx, id.ResourceGroup, id.Name)
 	if err != nil {
-		if !utils.ResponseWasNotFound(existing.Response) {
+		if !response.ResponseWasNotFound(existing.Response) {
 			return fmt.Errorf("checking for presence of existing %s: %+v", id, err)
 		}
 	}
 
-	if !utils.ResponseWasNotFound(existing.Response) {
+	if !response.ResponseWasNotFound(existing.Response) {
 		return tf.ImportAsExistsError("azurerm_key_vault", id.ID())
 	}
 
@@ -271,7 +271,7 @@ func resourceArmKeyVaultCreate(d *schema.ResourceData, meta interface{}) error {
 	softDeletedKeyVault, err := client.GetDeleted(ctx, id.Name, location)
 	if err != nil {
 		// If Terraform lacks permission to read at the Subscription we'll get 409, not 404
-		if !utils.ResponseWasNotFound(softDeletedKeyVault.Response) && !utils.ResponseWasForbidden(softDeletedKeyVault.Response) {
+		if !response.ResponseWasNotFound(softDeletedKeyVault.Response) && !response.ResponseWasForbidden(softDeletedKeyVault.Response) {
 			return fmt.Errorf("checking for the presence of an existing Soft-Deleted Key Vault %q (Location %q): %+v", id.Name, location, err)
 		}
 	}
@@ -280,7 +280,7 @@ func resourceArmKeyVaultCreate(d *schema.ResourceData, meta interface{}) error {
 	// if so, does the user want us to recover it?
 
 	recoverSoftDeletedKeyVault := false
-	// if !utils.ResponseWasNotFound(softDeletedKeyVault.Response) && !utils.ResponseWasForbidden(softDeletedKeyVault.Response) {
+	// if !response.ResponseWasNotFound(softDeletedKeyVault.Response) && !response.ResponseWasForbidden(softDeletedKeyVault.Response) {
 	// 	if !meta.(*ArmClient).Features.KeyVault.RecoverSoftDeletedKeyVaults {
 	// 		// this exists but the users opted out so they must import this it out-of-band
 	// 		return fmt.Errorf(optedOutOfRecoveringSoftDeletedKeyVaultErrorFmt(id.Name, location))
@@ -385,7 +385,7 @@ func resourceArmKeyVaultCreate(d *schema.ResourceData, meta interface{}) error {
 			}
 
 			if _, err := stateConf.WaitForState(); err != nil {
-				return fmt.Errorf("Error waiting for %s to become available: %s", id, err)
+				return fmt.Errorf("waiting for %s to become available: %s", id, err)
 			}
 		}
 	}
@@ -617,7 +617,7 @@ func resourceArmKeyVaultRead(d *schema.ResourceData, meta interface{}) error {
 
 	resp, err := client.Get(ctx, id.ResourceGroup, id.Name)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			log.Printf("[DEBUG] %s was not found - removing from state!", *id)
 			d.SetId("")
 			return nil
@@ -683,7 +683,7 @@ func resourceArmKeyVaultRead(d *schema.ResourceData, meta interface{}) error {
 
 	contactsResp, err := managementClient.GetCertificateContacts(ctx, *props.VaultURI)
 	if err != nil {
-		if !utils.ResponseWasForbidden(contactsResp.Response) && !utils.ResponseWasNotFound(contactsResp.Response) {
+		if !response.ResponseWasForbidden(contactsResp.Response) && !response.ResponseWasNotFound(contactsResp.Response) {
 			return fmt.Errorf("retrieving `contact` for KeyVault: %+v", err)
 		}
 	}
@@ -712,7 +712,7 @@ func resourceArmKeyVaultDelete(d *schema.ResourceData, meta interface{}) error {
 
 	read, err := client.Get(ctx, id.ResourceGroup, id.Name)
 	if err != nil {
-		if utils.ResponseWasNotFound(read.Response) {
+		if response.ResponseWasNotFound(read.Response) {
 			return nil
 		}
 
@@ -820,7 +820,7 @@ func keyVaultRefreshFunc(vaultUri string) resource.StateRefreshFunc {
 		conn, err := client.Get(vaultUri)
 		if err != nil {
 			log.Printf("[DEBUG] Didn't find KeyVault at %q", vaultUri)
-			return nil, "pending", fmt.Errorf("Error connecting to %q: %s", vaultUri, err)
+			return nil, "pending", fmt.Errorf("connecting to %q: %s", vaultUri, err)
 		}
 
 		defer conn.Body.Close()

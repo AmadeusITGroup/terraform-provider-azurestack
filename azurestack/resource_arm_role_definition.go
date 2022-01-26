@@ -11,9 +11,10 @@ import (
 	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/tf"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-	azSchema "github.com/terraform-providers/terraform-provider-azurestack/azurestack/internal/tf/schema"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/tf"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
+	azSchema "github.com/hashicorp/terraform-provider-azurestack/azurestack/internal/tf/schema"
 )
 
 func resourceArmRoleDefinition() *schema.Resource {
@@ -151,7 +152,7 @@ func resourceArmRoleDefinitionCreateUpdate(d *schema.ResourceData, meta interfac
 	if d.IsNewResource() {
 		existing, err := client.Get(ctx, scope, roleDefinitionId)
 		if err != nil {
-			if !utils.ResponseWasNotFound(existing.Response) {
+			if !response.ResponseWasNotFound(existing.Response) {
 				return fmt.Errorf("checking for presence of existing Role Definition ID for %q (Scope %q)", name, scope)
 			}
 		}
@@ -228,7 +229,7 @@ func resourceArmRoleDefinitionRead(d *schema.ResourceData, meta interface{}) err
 
 	resp, err := client.Get(ctx, roleDefinitionId.Scope, roleDefinitionId.RoleID)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			log.Printf("[DEBUG] Role Definition %q was not found - removing from state", d.Id())
 			d.SetId("")
 			return nil
@@ -264,7 +265,7 @@ func resourceArmRoleDefinitionDelete(d *schema.ResourceData, meta interface{}) e
 
 	resp, err := client.Delete(ctx, id.Scope, id.RoleID)
 	if err != nil {
-		if !utils.ResponseWasNotFound(resp.Response) {
+		if !response.ResponseWasNotFound(resp.Response) {
 			return fmt.Errorf("deleting Role Definition %q at Scope %q: %+v", id.RoleID, id.Scope, err)
 		}
 	}
@@ -412,7 +413,7 @@ func roleDefinitionUpdateStateRefreshFunc(ctx context.Context, client *authoriza
 	return func() (interface{}, string, error) {
 		resp, err := client.GetByID(ctx, roleDefinitionId)
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return resp, "NotFound", err
 			}
 			return resp, "Error", err
@@ -425,7 +426,7 @@ func roleDefinitionDeleteStateRefreshFunc(ctx context.Context, client *authoriza
 	return func() (interface{}, string, error) {
 		resp, err := client.GetByID(ctx, roleDefinitionId)
 		if err != nil {
-			if utils.ResponseWasNotFound(resp.Response) {
+			if response.ResponseWasNotFound(resp.Response) {
 				return resp, "NotFound", nil
 			}
 			return nil, "Error", err
@@ -434,7 +435,7 @@ func roleDefinitionDeleteStateRefreshFunc(ctx context.Context, client *authoriza
 	}
 }
 
-// copied from 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/services/authorization/parse" v2.48.0-openshift
+// copied from 	"github.com/hashicorp/terraform-provider-azurerm/azurerm/internal/services/authorization/parse" v2.48.0-openshift
 
 type RoleDefinitionID struct {
 	ResourceID string

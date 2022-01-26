@@ -6,9 +6,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2019-09-01/keyvault"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-	localAzure "github.com/terraform-providers/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
+	localAzure "github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func dataSourceArmKeyVault() *schema.Resource {
@@ -170,10 +170,10 @@ func dataSourceArmKeyVaultRead(d *schema.ResourceData, meta interface{}) error {
 
 	resp, err := client.Get(ctx, resourceGroup, name)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			return fmt.Errorf("KeyVault %q (Resource Group %q) does not exist", name, resourceGroup)
 		}
-		return fmt.Errorf("Error making Read request on KeyVault %q: %+v", name, err)
+		return fmt.Errorf("making Read request on KeyVault %q: %+v", name, err)
 	}
 
 	d.SetId(*resp.ID)
@@ -199,19 +199,19 @@ func dataSourceArmKeyVaultRead(d *schema.ResourceData, meta interface{}) error {
 
 		if sku := props.Sku; sku != nil {
 			if err := d.Set("sku_name", string(sku.Name)); err != nil {
-				return fmt.Errorf("Error setting `sku_name` for KeyVault %q: %+v", *resp.Name, err)
+				return fmt.Errorf("setting `sku_name` for KeyVault %q: %+v", *resp.Name, err)
 			}
 		} else {
-			return fmt.Errorf("Error making Read request on KeyVault %q: Unable to retrieve 'sku' value", *resp.Name)
+			return fmt.Errorf("making Read request on KeyVault %q: Unable to retrieve 'sku' value", *resp.Name)
 		}
 
 		flattenedPolicies := flattenAccessPolicies(props.AccessPolicies)
 		if err := d.Set("access_policy", flattenedPolicies); err != nil {
-			return fmt.Errorf("Error setting `access_policy` for KeyVault %q: %+v", *resp.Name, err)
+			return fmt.Errorf("setting `access_policy` for KeyVault %q: %+v", *resp.Name, err)
 		}
 
 		if err := d.Set("network_acls", flattenKeyVaultDataSourceNetworkAcls(props.NetworkAcls)); err != nil {
-			return fmt.Errorf("Error setting `network_acls` for KeyVault %q: %+v", *resp.Name, err)
+			return fmt.Errorf("setting `network_acls` for KeyVault %q: %+v", *resp.Name, err)
 		}
 	}
 

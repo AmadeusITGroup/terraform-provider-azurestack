@@ -9,8 +9,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2017-10-01/network"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
-	"github.com/terraform-providers/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 // peerMutex is used to prevent multiple Peering resources being created, updated
@@ -131,11 +131,11 @@ func resourceArmVirtualNetworkPeeringRead(d *schema.ResourceData, meta interface
 
 	resp, err := client.Get(ctx, resGroup, vnetName, name)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error making Read request on Azure virtual network peering %q: %+v", name, err)
+		return fmt.Errorf("making Read request on Azure virtual network peering %q: %+v", name, err)
 	}
 
 	// update appropriate values
@@ -173,11 +173,11 @@ func resourceArmVirtualNetworkPeeringDelete(d *schema.ResourceData, meta interfa
 
 	future, err := client.Delete(ctx, resGroup, vnetName, name)
 	if err != nil {
-		return fmt.Errorf("Error deleting Virtual Network Peering %q (Network %q / RG %q): %+v", name, vnetName, resGroup, err)
+		return fmt.Errorf("deleting Virtual Network Peering %q (Network %q / RG %q): %+v", name, vnetName, resGroup, err)
 	}
 
 	if err = future.WaitForCompletionRef(ctx, client.Client); err != nil {
-		return fmt.Errorf("Error waiting for deletion of Virtual Network Peering %q (Network %q / RG %q): %+v", name, vnetName, resGroup, err)
+		return fmt.Errorf("waiting for deletion of Virtual Network Peering %q (Network %q / RG %q): %+v", name, vnetName, resGroup, err)
 	}
 
 	return err
@@ -208,7 +208,7 @@ func retryVnetPeeringsClientCreateUpdate(d *schema.ResourceData, resGroup string
 
 		future, err := vnetPeeringsClient.CreateOrUpdate(ctx, resGroup, vnetName, name, peer)
 		if err != nil {
-			if utils.ResponseErrorIsRetryable(err) {
+			if response.ResponseErrorIsRetryable(err) {
 				return resource.RetryableError(err)
 			} else if future.Response().StatusCode == 400 && strings.Contains(err.Error(), "ReferencedResourceNotProvisioned") {
 				// Resource is not yet ready, this may be the case if the Vnet was just created or another peering was just initiated.

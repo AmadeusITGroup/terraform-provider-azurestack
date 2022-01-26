@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
 )
 
 func dataSourceArmResources() *schema.Resource {
@@ -98,7 +98,7 @@ func dataSourceArmResourcesRead(d *schema.ResourceData, meta interface{}) error 
 	resources := make([]map[string]interface{}, 0)
 	resource, err := client.ListComplete(ctx, filter, "", nil)
 	if err != nil {
-		return fmt.Errorf("Error getting resources: %+v", err)
+		return fmt.Errorf("getting resources: %+v", err)
 	}
 
 	for resource.NotDone() {
@@ -162,13 +162,13 @@ func dataSourceArmResourcesRead(d *schema.ResourceData, meta interface{}) error 
 
 		err = resource.NextWithContext(ctx)
 		if err != nil {
-			return fmt.Errorf("Error loading Resource List: %s", err)
+			return fmt.Errorf("loading Resource List: %s", err)
 		}
 	}
 
 	d.SetId(time.Now().UTC().String())
 	if err := d.Set("resources", resources); err != nil {
-		return fmt.Errorf("Error setting `resources`: %+v", err)
+		return fmt.Errorf("setting `resources`: %+v", err)
 	}
 
 	return nil

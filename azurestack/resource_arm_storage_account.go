@@ -9,7 +9,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 const blobStorageAccountDefaultAccessTier = "Hot"
@@ -321,7 +322,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 	storageAccountName := id.Path["storageaccounts"]
-	// https://github.com/terraform-providers/terraform-provider-azurestack/issues/98
+	// https://github.com/hashicorp/terraform-provider-azurestack/issues/98
 	// it appears the casing of the Resource ID's changed in Azure Stack version 1905
 	// as such we need to confirm both casings
 	if storageAccountName == "" {
@@ -353,7 +354,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 		_, err := client.Update(ctx, resourceGroupName, storageAccountName, opts)
 		if err != nil {
-			return fmt.Errorf("Error updating Azure Storage Account type %q: %+v", storageAccountName, err)
+			return fmt.Errorf("updating Azure Storage Account type %q: %+v", storageAccountName, err)
 		}
 
 		d.SetPartial("account_replication_type")
@@ -370,7 +371,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 	// 	_, err := client.Update(ctx, resourceGroupName, storageAccountName, opts)
 	// 	if err != nil {
-	// 		return fmt.Errorf("Error updating Azure Storage Account access_tier %q: %+v", storageAccountName, err)
+	// 		return fmt.Errorf("updating Azure Storage Account access_tier %q: %+v", storageAccountName, err)
 	// 	}
 
 	// 	d.SetPartial("access_tier")
@@ -385,7 +386,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 		_, err := client.Update(ctx, resourceGroupName, storageAccountName, opts)
 		if err != nil {
-			return fmt.Errorf("Error updating Azure Storage Account tags %q: %+v", storageAccountName, err)
+			return fmt.Errorf("updating Azure Storage Account tags %q: %+v", storageAccountName, err)
 		}
 
 		d.SetPartial("tags")
@@ -414,7 +415,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 		_, err := client.Update(ctx, resourceGroupName, storageAccountName, opts)
 		if err != nil {
-			return fmt.Errorf("Error updating Azure Storage Account Encryption %q: %+v", storageAccountName, err)
+			return fmt.Errorf("updating Azure Storage Account Encryption %q: %+v", storageAccountName, err)
 		}
 	}
 
@@ -428,7 +429,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 
 		_, err := client.Update(ctx, resourceGroupName, storageAccountName, opts)
 		if err != nil {
-			return fmt.Errorf("Error updating Azure Storage Account Custom Domain %q: %+v", storageAccountName, err)
+			return fmt.Errorf("updating Azure Storage Account Custom Domain %q: %+v", storageAccountName, err)
 		}
 	}
 
@@ -447,7 +448,7 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	name := id.Path["storageaccounts"]
-	// https://github.com/terraform-providers/terraform-provider-azurestack/issues/98
+	// https://github.com/hashicorp/terraform-provider-azurestack/issues/98
 	// it appears the casing of the Resource ID's changed in Azure Stack version 1905
 	// as such we need to confirm both casings
 	if name == "" {
@@ -457,11 +458,11 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 
 	resp, err := client.GetProperties(ctx, resGroup, name)
 	if err != nil {
-		if utils.ResponseWasNotFound(resp.Response) {
+		if response.ResponseWasNotFound(resp.Response) {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("Error reading the state of AzurStack Storage Account %q: %+v", name, err)
+		return fmt.Errorf("reading the state of AzurStack Storage Account %q: %+v", name, err)
 	}
 	// (resGroup, name)
 	keys, err := client.ListKeys(ctx, resGroup, name)
@@ -487,7 +488,7 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 
 		if customDomain := props.CustomDomain; customDomain != nil {
 			if err := d.Set("custom_domain", flattenStorageAccountCustomDomain(customDomain)); err != nil {
-				return fmt.Errorf("Error flattening `custom_domain`: %+v", err)
+				return fmt.Errorf("flattening `custom_domain`: %+v", err)
 			}
 		}
 
@@ -567,7 +568,7 @@ func resourceArmStorageAccountDelete(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 	name := id.Path["storageaccounts"]
-	// https://github.com/terraform-providers/terraform-provider-azurestack/issues/98
+	// https://github.com/hashicorp/terraform-provider-azurestack/issues/98
 	// it appears the casing of the Resource ID's changed in Azure Stack version 1905
 	// as such we need to confirm both casings
 	if name == "" {
@@ -577,7 +578,7 @@ func resourceArmStorageAccountDelete(d *schema.ResourceData, meta interface{}) e
 
 	_, err = client.Delete(ctx, resGroup, name)
 	if err != nil {
-		return fmt.Errorf("Error issuing AzureStack delete request for storage account %q: %+v", name, err)
+		return fmt.Errorf("issuing AzureStack delete request for storage account %q: %+v", name, err)
 	}
 
 	return nil
