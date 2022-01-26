@@ -12,6 +12,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.1
+	github.com/tombuildsstuff/giovanni v0.17.0
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
 )
 
@@ -29,7 +30,9 @@ require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.37.0 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
+	github.com/dnaeon/go-vcr v1.2.0 // indirect
 	github.com/fatih/color v1.7.0 // indirect
+	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
