@@ -45,12 +45,6 @@ func (BlobV0ToV1) Schema() map[string]*pluginsdk.Schema {
 			ForceNew: true,
 			Default:  0,
 		},
-		"content_type": {
-			Type:          pluginsdk.TypeString,
-			Optional:      true,
-			Default:       "application/octet-stream",
-			ConflictsWith: []string{"source_uri"},
-		},
 		"source": {
 			Type:          pluginsdk.TypeString,
 			Optional:      true,

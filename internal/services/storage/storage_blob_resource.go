@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -175,8 +174,6 @@ func storageBlobCreate(d *pluginsdk.ResourceData, meta interface{}) error {
 		Client:        blobsClient,
 
 		BlobType:      d.Get("type").(string),
-		CacheControl:  d.Get("cache_control").(string),
-		ContentType:   d.Get("content_type").(string),
 		Parallelism:   d.Get("parallelism").(int),
 		Size:          d.Get("size").(int),
 		Source:        d.Get("source").(string),
@@ -228,29 +225,6 @@ func storageBlobUpdate(d *pluginsdk.ResourceData, meta interface{}) error {
 		log.Printf("[DEBUG] Updated Access Tier for Blob %q (Container %q / Account %q).", id.BlobName, id.ContainerName, id.AccountName)
 	}
 
-	if d.HasChange("content_type") || d.HasChange("cache_control") {
-		log.Printf("[DEBUG] Updating Properties for Blob %q (Container %q / Account %q)...", id.BlobName, id.ContainerName, id.AccountName)
-		input := blobs.SetPropertiesInput{
-			ContentType:  pointer.FromString(d.Get("content_type").(string)),
-			CacheControl: pointer.FromString(d.Get("cache_control").(string)),
-		}
-
-		// `content_md5` is `ForceNew` but must be included in the `SetPropertiesInput` update payload or it will be zeroed on the blob.
-		if contentMD5 := d.Get("content_md5").(string); contentMD5 != "" {
-			data, err := convertHexToBase64Encoding(contentMD5)
-			if err != nil {
-				return fmt.Errorf("in converting hex to base64 encoding for content_md5: %s", err)
-			}
-
-			input.ContentMD5 = pointer.FromString(data)
-		}
-
-		if _, err := blobsClient.SetProperties(ctx, id.AccountName, id.ContainerName, id.BlobName, input); err != nil {
-			return fmt.Errorf("updating Properties for Blob %q (Container %q / Account %q): %s", id.BlobName, id.ContainerName, id.AccountName, err)
-		}
-		log.Printf("[DEBUG] Updated Properties for Blob %q (Container %q / Account %q).", id.BlobName, id.ContainerName, id.AccountName)
-	}
-
 	return storageBlobRead(d, meta)
 }
 
@@ -297,8 +271,6 @@ func storageBlobRead(d *pluginsdk.ResourceData, meta interface{}) error {
 	d.Set("storage_account_name", id.AccountName)
 
 	d.Set("access_tier", string(props.AccessTier))
-	d.Set("content_type", props.ContentType)
-	d.Set("cache_control", props.CacheControl)
 
 	// Set the ContentMD5 value to md5 hash in hex
 	contentMD5 := ""
