@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
@@ -85,10 +85,7 @@ func resourceArmLocalNetworkGatewayCreate(d *schema.ResourceData, meta interface
 
 	addressSpaces := expandLocalNetworkGatewayAddressSpaces(d)
 
-	bgpSettings, err := expandLocalNetworkGatewayBGPSettings(d)
-	if err != nil {
-		return err
-	}
+	bgpSettings := expandLocalNetworkGatewayBGPSettings(d)
 
 	tags := d.Get("tags").(map[string]interface{})
 
@@ -213,22 +210,22 @@ func resourceGroupAndLocalNetworkGatewayFromId(localNetworkGatewayId string) (st
 	return resGroup, name, nil
 }
 
-func expandLocalNetworkGatewayBGPSettings(d *schema.ResourceData) (*network.BgpSettings, error) {
+func expandLocalNetworkGatewayBGPSettings(d *schema.ResourceData) *network.BgpSettings {
 	v, exists := d.GetOk("bgp_settings")
 	if !exists {
-		return nil, nil
+		return nil
 	}
 
 	settings := v.([]interface{})
 	setting := settings[0].(map[string]interface{})
 
 	bgpSettings := network.BgpSettings{
-		Asn:               utils.Int64(int64(setting["asn"].(int))),
-		BgpPeeringAddress: utils.String(setting["bgp_peering_address"].(string)),
-		PeerWeight:        utils.Int32(int32(setting["peer_weight"].(int))),
+		Asn:               pointer.FromInt64(int64(setting["asn"].(int))),
+		BgpPeeringAddress: pointer.FromString(setting["bgp_peering_address"].(string)),
+		PeerWeight:        pointer.FromInt32(setting["peer_weight"].(int)),
 	}
 
-	return &bgpSettings, nil
+	return &bgpSettings
 }
 
 func expandLocalNetworkGatewayAddressSpaces(d *schema.ResourceData) []string {

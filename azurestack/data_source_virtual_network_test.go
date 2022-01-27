@@ -65,7 +65,7 @@ func TestAccDataSourceArmVirtualNetwork_peering(t *testing.T) {
 func testAccDataSourceArmVirtualNetwork_basic(rInt int, location string) string {
 	return fmt.Sprintf(`
 resource "azurestack_resource_group" "test" {
-  name     = "acctest%d-rg"
+  name     = "acctestRG-%d"
   location = "%s"
 }
 

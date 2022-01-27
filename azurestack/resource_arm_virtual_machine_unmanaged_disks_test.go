@@ -167,8 +167,8 @@ func TestAccAzureStackVirtualMachine_tags(t *testing.T) {
 	})
 }
 
-//This is a regression test around https://github.com/hashicorp/terraform/issues/6517
-//Because we use CreateOrUpdate, we were sending an empty password on update requests
+// This is a regression test around https://github.com/hashicorp/terraform/issues/6517
+// Because we use CreateOrUpdate, we were sending an empty password on update requests
 func TestAccAzureStackVirtualMachine_updateMachineSize(t *testing.T) {
 	var vm compute.VirtualMachine
 
@@ -554,9 +554,7 @@ func TestAccAzureStackVirtualMachine_optionalOSProfile(t *testing.T) {
 			{
 				Destroy: false,
 				Config:  prepConfig,
-				Check: func(s *terraform.State) error {
-					return testCheckAzureStackVirtualMachineDestroy(s)
-				},
+				Check:   testCheckAzureStackVirtualMachineDestroy,
 			},
 			{
 				Config: config,

@@ -9,11 +9,9 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
-
-var networkInterfaceResourceName = "azurestack_network_interface"
 
 func resourceArmNetworkInterface() *schema.Resource {
 	return &schema.Resource{
@@ -216,7 +214,7 @@ func resourceArmNetworkInterfaceCreateUpdate(d *schema.ResourceData, meta interf
 
 	properties := network.InterfacePropertiesFormat{
 		EnableIPForwarding: &enableIpForwarding,
-		Primary:            utils.Bool(true),
+		Primary:            pointer.FromBool(true),
 		// EnableAcceleratedNetworking: &enableAcceleratedNetworking,
 	}
 
@@ -257,7 +255,7 @@ func resourceArmNetworkInterfaceCreateUpdate(d *schema.ResourceData, meta interf
 		}
 
 		if hasFQDN {
-			ifaceDnsSettings.InternalFqdn = utils.String(fqdn.(string))
+			ifaceDnsSettings.InternalFqdn = pointer.FromString(fqdn.(string))
 		}
 
 		properties.DNSSettings = &ifaceDnsSettings
@@ -571,7 +569,7 @@ func expandAzureStackNetworkInterfaceIpConfigurations(d *schema.ResourceData) ([
 			properties.Primary = &b
 		}
 
-		//also this
+		// also this
 		// if v, ok := data["application_gateway_backend_address_pools_ids"]; ok {
 		// 	var ids []network.ApplicationGatewayBackendAddressPool
 		// 	pools := v.(*schema.Set).List()

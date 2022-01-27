@@ -11,8 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/validate"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/validate"
+
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/azure"
 )
 
@@ -171,7 +172,7 @@ func resourceArmLoadBalancerRuleCreateUpdate(d *schema.ResourceData, meta interf
 	}
 
 	var ruleId string
-	for _, LoadBalancingRule := range *(*read.LoadBalancerPropertiesFormat).LoadBalancingRules {
+	for _, LoadBalancingRule := range *read.LoadBalancerPropertiesFormat.LoadBalancingRules {
 		if *LoadBalancingRule.Name == d.Get("name").(string) {
 			ruleId = *LoadBalancingRule.ID
 		}
@@ -285,9 +286,9 @@ func resourceArmLoadBalancerRuleDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	}
 
-	oldLbRules := *loadBalancer.LoadBalancerPropertiesFormat.LoadBalancingRules
-	newLbRules := append(oldLbRules[:index], oldLbRules[index+1:]...)
-	loadBalancer.LoadBalancerPropertiesFormat.LoadBalancingRules = &newLbRules
+	rules := *loadBalancer.LoadBalancerPropertiesFormat.LoadBalancingRules
+	rules = append(rules[:index], rules[index+1:]...)
+	loadBalancer.LoadBalancerPropertiesFormat.LoadBalancingRules = &rules
 
 	resGroup, loadBalancerName, err := resourceGroupAndLBNameFromId(d.Get("loadbalancer_id").(string))
 	if err != nil {
@@ -319,13 +320,13 @@ func expandAzureRmLoadBalancerRule(d *schema.ResourceData, lb *network.LoadBalan
 
 	properties := network.LoadBalancingRulePropertiesFormat{
 		Protocol:         network.TransportProtocol(d.Get("protocol").(string)),
-		FrontendPort:     utils.Int32(int32(d.Get("frontend_port").(int))),
-		BackendPort:      utils.Int32(int32(d.Get("backend_port").(int))),
-		EnableFloatingIP: utils.Bool(d.Get("enable_floating_ip").(bool)),
+		FrontendPort:     pointer.FromInt32(d.Get("frontend_port").(int)),
+		BackendPort:      pointer.FromInt32(d.Get("backend_port").(int)),
+		EnableFloatingIP: pointer.FromBool(d.Get("enable_floating_ip").(bool)),
 	}
 
 	if v, ok := d.GetOk("idle_timeout_in_minutes"); ok {
-		properties.IdleTimeoutInMinutes = utils.Int32(int32(v.(int)))
+		properties.IdleTimeoutInMinutes = pointer.FromInt32(v.(int))
 	}
 
 	if v := d.Get("load_distribution").(string); v != "" {
@@ -335,7 +336,7 @@ func expandAzureRmLoadBalancerRule(d *schema.ResourceData, lb *network.LoadBalan
 	if v := d.Get("frontend_ip_configuration_name").(string); v != "" {
 		rule, exists := findLoadBalancerFrontEndIpConfigurationByName(lb, v)
 		if !exists {
-			return nil, fmt.Errorf("[ERROR] Cannot find FrontEnd IP Configuration with the name %s", v)
+			return nil, fmt.Errorf("Cannot find FrontEnd IP Configuration with the name %s", v)
 		}
 
 		properties.FrontendIPConfiguration = &network.SubResource{
@@ -356,7 +357,7 @@ func expandAzureRmLoadBalancerRule(d *schema.ResourceData, lb *network.LoadBalan
 	}
 
 	return &network.LoadBalancingRule{
-		Name:                              utils.String(d.Get("name").(string)),
+		Name:                              pointer.FromString(d.Get("name").(string)),
 		LoadBalancingRulePropertiesFormat: &properties,
 	}, nil
 }

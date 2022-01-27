@@ -12,12 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
-
-var virtualMachineResourceName = "azurestack_virtual_machine"
 
 func resourceArmVirtualMachine() *schema.Resource {
 	return &schema.Resource{
@@ -607,10 +604,7 @@ func resourceArmVirtualMachineCreate(d *schema.ResourceData, meta interface{}) e
 	}
 
 	if _, ok := d.GetOk("plan"); ok {
-		plan, err := expandAzureStackVirtualMachinePlan(d)
-		if err != nil {
-			return err
-		}
+		plan := expandAzureStackVirtualMachinePlan(d)
 
 		vm.Plan = plan
 	}
@@ -792,17 +786,14 @@ func resourceArmVirtualMachineDelete(d *schema.ResourceData, meta interface{}) e
 			return fmt.Errorf("expanding OS Disk: %s", err)
 		}
 
-		if osDisk.Vhd != nil {
-			if osDisk.Vhd.URI != nil {
-				if err = resourceArmVirtualMachineDeleteVhd(*osDisk.Vhd.URI, meta); err != nil {
-					return fmt.Errorf("deleting OS Disk VHD: %+v", err)
-				}
+		// nolint:gocritic
+		if osDisk.Vhd != nil && osDisk.Vhd.URI != nil {
+			if err = resourceArmVirtualMachineDeleteVhd(*osDisk.Vhd.URI, meta); err != nil {
+				return fmt.Errorf("deleting OS Disk VHD: %+v", err)
 			}
-		} else if osDisk.ManagedDisk != nil {
-			if osDisk.ManagedDisk.ID != nil {
-				if err = resourceArmVirtualMachineDeleteManagedDisk(*osDisk.ManagedDisk.ID, meta); err != nil {
-					return fmt.Errorf("deleting OS Managed Disk: %+v", err)
-				}
+		} else if osDisk.ManagedDisk != nil && osDisk.ManagedDisk.ID != nil {
+			if err = resourceArmVirtualMachineDeleteManagedDisk(*osDisk.ManagedDisk.ID, meta); err != nil {
+				return fmt.Errorf("deleting OS Managed Disk: %+v", err)
 			}
 		} else {
 			return fmt.Errorf("Unable to locate OS managed disk properties from %s", name)
@@ -819,6 +810,7 @@ func resourceArmVirtualMachineDelete(d *schema.ResourceData, meta interface{}) e
 		}
 
 		for _, disk := range disks {
+			// nolint:gocritic
 			if disk.Vhd != nil {
 				if err = resourceArmVirtualMachineDeleteVhd(*disk.Vhd.URI, meta); err != nil {
 					return fmt.Errorf("deleting Data Disk VHD: %+v", err)
@@ -1153,7 +1145,7 @@ func flattenAzureRmVirtualMachineReviseDiskInfo(result map[string]interface{}, d
 	}
 }
 
-func expandAzureStackVirtualMachinePlan(d *schema.ResourceData) (*compute.Plan, error) {
+func expandAzureStackVirtualMachinePlan(d *schema.ResourceData) *compute.Plan {
 	planConfigs := d.Get("plan").([]interface{})
 
 	planConfig := planConfigs[0].(map[string]interface{})
@@ -1166,7 +1158,7 @@ func expandAzureStackVirtualMachinePlan(d *schema.ResourceData) (*compute.Plan, 
 		Publisher: &publisher,
 		Name:      &name,
 		Product:   &product,
-	}, nil
+	}
 }
 
 func expandAzureStackVirtualMachineIdentity(d *schema.ResourceData) *compute.VirtualMachineIdentity {
@@ -1198,20 +1190,16 @@ func expandAzureStackVirtualMachineOsProfile(d *schema.ResourceData) (*compute.O
 	}
 
 	if _, ok := d.GetOk("os_profile_windows_config"); ok {
-		winConfig, err := expandAzureStackVirtualMachineOsProfileWindowsConfig(d)
-		if err != nil {
-			return nil, err
-		}
+		winConfig := expandAzureStackVirtualMachineOsProfileWindowsConfig(d)
+
 		if winConfig != nil {
 			profile.WindowsConfiguration = winConfig
 		}
 	}
 
 	if _, ok := d.GetOk("os_profile_linux_config"); ok {
-		linuxConfig, err := expandAzureStackVirtualMachineOsProfileLinuxConfig(d)
-		if err != nil {
-			return nil, err
-		}
+		linuxConfig := expandAzureStackVirtualMachineOsProfileLinuxConfig(d)
+
 		if linuxConfig != nil {
 			profile.LinuxConfiguration = linuxConfig
 		}
@@ -1275,7 +1263,7 @@ func expandAzureStackVirtualMachineOsProfileSecrets(d *schema.ResourceData) *[]c
 	return &secrets
 }
 
-func expandAzureStackVirtualMachineOsProfileLinuxConfig(d *schema.ResourceData) (*compute.LinuxConfiguration, error) {
+func expandAzureStackVirtualMachineOsProfileLinuxConfig(d *schema.ResourceData) *compute.LinuxConfiguration {
 	osProfilesLinuxConfig := d.Get("os_profile_linux_config").(*schema.Set).List()
 
 	linuxConfig := osProfilesLinuxConfig[0].(map[string]interface{})
@@ -1310,10 +1298,10 @@ func expandAzureStackVirtualMachineOsProfileLinuxConfig(d *schema.ResourceData) 
 		}
 	}
 
-	return config, nil
+	return config
 }
 
-func expandAzureStackVirtualMachineOsProfileWindowsConfig(d *schema.ResourceData) (*compute.WindowsConfiguration, error) {
+func expandAzureStackVirtualMachineOsProfileWindowsConfig(d *schema.ResourceData) *compute.WindowsConfiguration {
 	osProfilesWindowsConfig := d.Get("os_profile_windows_config").(*schema.Set).List()
 
 	osProfileConfig := osProfilesWindowsConfig[0].(map[string]interface{})
@@ -1377,7 +1365,7 @@ func expandAzureStackVirtualMachineOsProfileWindowsConfig(d *schema.ResourceData
 			config.AdditionalUnattendContent = &additionalConfigContent
 		}
 	}
-	return config, nil
+	return config
 }
 
 func expandAzureStackVirtualMachineDataDisk(d *schema.ResourceData) ([]compute.DataDisk, error) {
@@ -1418,13 +1406,13 @@ func expandAzureStackVirtualMachineDataDisk(d *schema.ResourceData) ([]compute.D
 		}
 
 		if vhdURI != "" && managedDiskID != "" {
-			return nil, fmt.Errorf("[ERROR] Conflict between `vhd_uri` and `managed_disk_id` (only one or the other can be used)")
+			return nil, fmt.Errorf("Conflict between `vhd_uri` and `managed_disk_id` (only one or the other can be used)")
 		}
 		if vhdURI != "" && managedDiskType != "" {
-			return nil, fmt.Errorf("[ERROR] Conflict between `vhd_uri` and `managed_disk_type` (only one or the other can be used)")
+			return nil, fmt.Errorf("Conflict between `vhd_uri` and `managed_disk_type` (only one or the other can be used)")
 		}
 		if managedDiskID == "" && vhdURI == "" && strings.EqualFold(string(data_disk.CreateOption), string(compute.Attach)) {
-			return nil, fmt.Errorf("[ERROR] Must specify `vhd_uri` or `managed_disk_id` to attach")
+			return nil, fmt.Errorf("Must specify `vhd_uri` or `managed_disk_id` to attach")
 		}
 
 		if v := config["caching"].(string); v != "" {
@@ -1432,11 +1420,11 @@ func expandAzureStackVirtualMachineDataDisk(d *schema.ResourceData) ([]compute.D
 		}
 
 		if v, ok := config["disk_size_gb"].(int); ok {
-			data_disk.DiskSizeGB = utils.Int32(int32(v))
+			data_disk.DiskSizeGB = pointer.FromInt32(v)
 		}
 
 		if v, ok := config["write_accelerator_enabled"].(bool); ok {
-			data_disk.WriteAcceleratorEnabled = utils.Bool(v)
+			data_disk.WriteAcceleratorEnabled = pointer.FromBool(v)
 		}
 
 		data_disks = append(data_disks, data_disk)
@@ -1453,8 +1441,8 @@ func expandAzureStackVirtualMachineDiagnosticsProfile(d *schema.ResourceData) *c
 		bootDiagnostic := bootDiagnostics[0].(map[string]interface{})
 
 		diagnostic := &compute.BootDiagnostics{
-			Enabled:    utils.Bool(bootDiagnostic["enabled"].(bool)),
-			StorageURI: utils.String(bootDiagnostic["storage_uri"].(string)),
+			Enabled:    pointer.FromBool(bootDiagnostic["enabled"].(bool)),
+			StorageURI: pointer.FromString(bootDiagnostic["storage_uri"].(string)),
 		}
 
 		diagnosticsProfile.BootDiagnostics = diagnostic
@@ -1475,7 +1463,7 @@ func expandAzureStackVirtualMachineImageReference(d *schema.ResourceData) (*comp
 	imageReference := compute.ImageReference{}
 
 	if imageID != "" && publisher != "" {
-		return nil, fmt.Errorf("[ERROR] Conflict between `id` and `publisher` (only one or the other can be used)")
+		return nil, fmt.Errorf("Conflict between `id` and `publisher` (only one or the other can be used)")
 	}
 
 	if imageID != "" {
@@ -1556,16 +1544,16 @@ func expandAzureStackVirtualMachineOsDisk(d *schema.ResourceData) (*compute.OSDi
 		osDisk.ManagedDisk = managedDisk
 	}
 
-	//BEGIN: code to be removed after GH-13016 is merged
+	// BEGIN: code to be removed after GH-13016 is merged
 	if vhdURI != "" && managedDiskID != "" {
-		return nil, fmt.Errorf("[ERROR] Conflict between `vhd_uri` and `managed_disk_id` (only one or the other can be used)")
+		return nil, fmt.Errorf("Conflict between `vhd_uri` and `managed_disk_id` (only one or the other can be used)")
 	}
 	if vhdURI != "" && managedDiskType != "" {
-		return nil, fmt.Errorf("[ERROR] Conflict between `vhd_uri` and `managed_disk_type` (only one or the other can be used)")
+		return nil, fmt.Errorf("Conflict between `vhd_uri` and `managed_disk_type` (only one or the other can be used)")
 	}
-	//END: code to be removed after GH-13016 is merged
+	// END: code to be removed after GH-13016 is merged
 	if managedDiskID == "" && vhdURI == "" && strings.EqualFold(string(osDisk.CreateOption), string(compute.Attach)) {
-		return nil, fmt.Errorf("[ERROR] Must specify `vhd_uri` or `managed_disk_id` to attach")
+		return nil, fmt.Errorf("Must specify `vhd_uri` or `managed_disk_id` to attach")
 	}
 
 	if v := config["image_uri"].(string); v != "" {
@@ -1583,11 +1571,11 @@ func expandAzureStackVirtualMachineOsDisk(d *schema.ResourceData) (*compute.OSDi
 	}
 
 	if v := config["disk_size_gb"].(int); v != 0 {
-		osDisk.DiskSizeGB = utils.Int32(int32(v))
+		osDisk.DiskSizeGB = pointer.FromInt32(v)
 	}
 
 	if v, ok := config["write_accelerator_enabled"].(bool); ok {
-		osDisk.WriteAcceleratorEnabled = utils.Bool(v)
+		osDisk.WriteAcceleratorEnabled = pointer.FromBool(v)
 	}
 
 	return osDisk, nil
@@ -1677,7 +1665,7 @@ func resourceArmVirtualMachineGetManagedDiskInfo(disk *compute.ManagedDiskParame
 	ctx := meta.(*ArmClient).StopContext
 
 	if disk == nil || disk.ID == nil {
-		return nil, nil
+		return nil, fmt.Errorf("disk or disk.id is nil")
 	}
 
 	diskId := *disk.ID

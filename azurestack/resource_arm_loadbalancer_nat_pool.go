@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/validate"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/validate"
 )
 
 func resourceArmLoadBalancerNatPool() *schema.Resource {
@@ -141,7 +141,7 @@ func resourceArmLoadBalancerNatPoolCreateUpdate(d *schema.ResourceData, meta int
 	}
 
 	var natPoolId string
-	for _, InboundNatPool := range *(*read.LoadBalancerPropertiesFormat).InboundNatPools {
+	for _, InboundNatPool := range *read.LoadBalancerPropertiesFormat.InboundNatPools {
 		if *InboundNatPool.Name == d.Get("name").(string) {
 			natPoolId = *InboundNatPool.ID
 		}
@@ -237,9 +237,9 @@ func resourceArmLoadBalancerNatPoolDelete(d *schema.ResourceData, meta interface
 		return nil
 	}
 
-	oldNatPools := *loadBalancer.LoadBalancerPropertiesFormat.InboundNatPools
-	newNatPools := append(oldNatPools[:index], oldNatPools[index+1:]...)
-	loadBalancer.LoadBalancerPropertiesFormat.InboundNatPools = &newNatPools
+	pools := *loadBalancer.LoadBalancerPropertiesFormat.InboundNatPools
+	pools = append(pools[:index], pools[index+1:]...)
+	loadBalancer.LoadBalancerPropertiesFormat.InboundNatPools = &pools
 
 	resGroup, loadBalancerName, err := resourceGroupAndLBNameFromId(d.Get("loadbalancer_id").(string))
 	if err != nil {
@@ -271,15 +271,15 @@ func expandAzureRmLoadBalancerNatPool(d *schema.ResourceData, lb *network.LoadBa
 
 	properties := network.InboundNatPoolPropertiesFormat{
 		Protocol:               network.TransportProtocol(d.Get("protocol").(string)),
-		FrontendPortRangeStart: utils.Int32(int32(d.Get("frontend_port_start").(int))),
-		FrontendPortRangeEnd:   utils.Int32(int32(d.Get("frontend_port_end").(int))),
-		BackendPort:            utils.Int32(int32(d.Get("backend_port").(int))),
+		FrontendPortRangeStart: pointer.FromInt32(d.Get("frontend_port_start").(int)),
+		FrontendPortRangeEnd:   pointer.FromInt32(d.Get("frontend_port_end").(int)),
+		BackendPort:            pointer.FromInt32(d.Get("backend_port").(int)),
 	}
 
 	if v := d.Get("frontend_ip_configuration_name").(string); v != "" {
 		rule, exists := findLoadBalancerFrontEndIpConfigurationByName(lb, v)
 		if !exists {
-			return nil, fmt.Errorf("[ERROR] Cannot find FrontEnd IP Configuration with the name %s", v)
+			return nil, fmt.Errorf("Cannot find FrontEnd IP Configuration with the name %s", v)
 		}
 
 		properties.FrontendIPConfiguration = &network.SubResource{
@@ -288,7 +288,7 @@ func expandAzureRmLoadBalancerNatPool(d *schema.ResourceData, lb *network.LoadBa
 	}
 
 	return &network.InboundNatPool{
-		Name:                           utils.String(d.Get("name").(string)),
+		Name:                           pointer.FromString(d.Get("name").(string)),
 		InboundNatPoolPropertiesFormat: &properties,
 	}, nil
 }

@@ -158,7 +158,7 @@ func flattenAzureStackDnsARecords(records *[]dns.ARecord) []string {
 	return results
 }
 
-func expandAzureStackDnsARecords(d *schema.ResourceData) ([]dns.ARecord, error) {
+func expandAzureStackDnsARecords(d *schema.ResourceData) []dns.ARecord {
 	recordStrings := d.Get("records").(*schema.Set).List()
 	records := make([]dns.ARecord, len(recordStrings))
 
@@ -169,5 +169,5 @@ func expandAzureStackDnsARecords(d *schema.ResourceData) ([]dns.ARecord, error) 
 		}
 	}
 
-	return records, nil
+	return records
 }

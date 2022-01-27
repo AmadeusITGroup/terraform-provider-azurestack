@@ -3,10 +3,9 @@ package azurestack
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"time"
-
-	"regexp"
 
 	"github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -43,12 +42,15 @@ func resourceArmStorageContainer() *schema.Resource {
 			"properties": {
 				Type:     schema.TypeMap,
 				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
 }
 
-//Following the naming convention as laid out in the docs
+// Following the naming convention as laid out in the docs
 func validateArmStorageContainerName(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	if !regexp.MustCompile(`^\$root$|^[0-9a-z-]+$`).MatchString(value) {

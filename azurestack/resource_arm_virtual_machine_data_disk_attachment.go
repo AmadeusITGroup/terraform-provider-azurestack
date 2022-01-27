@@ -103,8 +103,8 @@ func resourceVirtualMachineDataDiskAttachmentCreateUpdate(d *schema.ResourceData
 
 	// Locking this resource so we don't make modifications to it at the same time if there is a
 	// During destroy vm, updates to vm are not allowed. Hence, disks are not detached
-	azureStackLockByName(virtualMachineName, virtualMachineResourceName)
-	defer azureStackUnlockByName(virtualMachineName, virtualMachineResourceName)
+	azureStackLockByName(virtualMachineName, "azurestack_virtual_machine")
+	defer azureStackUnlockByName(virtualMachineName, "azurestack_virtual_machine")
 
 	virtualMachine, err := client.Get(ctx, resourceGroup, virtualMachineName, "")
 	if err != nil {
@@ -267,8 +267,8 @@ func resourceVirtualMachineDataDiskAttachmentDelete(d *schema.ResourceData, meta
 
 	// Locking this resource so we don't make modifications to it at the same time if there is a
 	// During destroy vm, updates to vm are not allowed. Hence, disks are not detached
-	azureStackLockByName(virtualMachineName, virtualMachineResourceName)
-	defer azureStackUnlockByName(virtualMachineName, virtualMachineResourceName)
+	azureStackLockByName(virtualMachineName, "azurestack_virtual_machine")
+	defer azureStackUnlockByName(virtualMachineName, "azurestack_virtual_machine")
 
 	virtualMachine, err := client.Get(ctx, resourceGroup, virtualMachineName, "")
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/errwrap"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
 )
 
 func resourceArmLoadBalancerBackendAddressPool() *schema.Resource {
@@ -109,7 +109,7 @@ func resourceArmLoadBalancerBackendAddressPoolCreate(d *schema.ResourceData, met
 	}
 
 	var poolId string
-	for _, BackendAddressPool := range *(*read.LoadBalancerPropertiesFormat).BackendAddressPools {
+	for _, BackendAddressPool := range *read.LoadBalancerPropertiesFormat.BackendAddressPools {
 		if *BackendAddressPool.Name == d.Get("name").(string) {
 			poolId = *BackendAddressPool.ID
 		}
@@ -208,9 +208,9 @@ func resourceArmLoadBalancerBackendAddressPoolDelete(d *schema.ResourceData, met
 		return nil
 	}
 
-	oldBackEndPools := *loadBalancer.LoadBalancerPropertiesFormat.BackendAddressPools
-	newBackEndPools := append(oldBackEndPools[:index], oldBackEndPools[index+1:]...)
-	loadBalancer.LoadBalancerPropertiesFormat.BackendAddressPools = &newBackEndPools
+	pools := *loadBalancer.LoadBalancerPropertiesFormat.BackendAddressPools
+	pools = append(pools[:index], pools[index+1:]...)
+	loadBalancer.LoadBalancerPropertiesFormat.BackendAddressPools = &pools
 
 	resGroup, loadBalancerName, err := resourceGroupAndLBNameFromId(d.Get("loadbalancer_id").(string))
 	if err != nil {
@@ -240,6 +240,6 @@ func resourceArmLoadBalancerBackendAddressPoolDelete(d *schema.ResourceData, met
 
 func expandAzureRmLoadBalancerBackendAddressPools(d *schema.ResourceData) network.BackendAddressPool {
 	return network.BackendAddressPool{
-		Name: utils.String(d.Get("name").(string)),
+		Name: pointer.FromString(d.Get("name").(string)),
 	}
 }

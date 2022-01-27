@@ -9,7 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/storage/mgmt/storage"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
@@ -269,14 +269,14 @@ func resourceArmStorageAccountCreate(d *schema.ResourceData, meta interface{}) e
 		if enableBlobEncryption {
 			// if the encryption is enabled, then set the arguments
 			storageAccountEncryptionSource := d.Get("account_encryption_source").(string)
-			parameters.AccountPropertiesCreateParameters.Encryption =
-				&storage.Encryption{
-					Services: &storage.EncryptionServices{
-						Blob: &storage.EncryptionService{
-							Enabled: utils.Bool(enableBlobEncryption),
-						}},
-					KeySource: storage.KeySource(storageAccountEncryptionSource),
-				}
+			parameters.AccountPropertiesCreateParameters.Encryption = &storage.Encryption{
+				Services: &storage.EncryptionServices{
+					Blob: &storage.EncryptionService{
+						Enabled: pointer.FromBool(enableBlobEncryption),
+					},
+				},
+				KeySource: storage.KeySource(storageAccountEncryptionSource),
+			}
 		}
 
 	}
@@ -322,7 +322,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 	storageAccountName := id.Path["storageaccounts"]
-	// https://github.com/hashicorp/terraform-provider-azurestack/issues/98
+	// https://github.com/terraform-providers/terraform-provider-azurestack/issues/98
 	// it appears the casing of the Resource ID's changed in Azure Stack version 1905
 	// as such we need to confirm both casings
 	if storageAccountName == "" {
@@ -407,7 +407,7 @@ func resourceArmStorageAccountUpdate(d *schema.ResourceData, meta interface{}) e
 		if d.HasChange("enable_blob_encryption") {
 			enableEncryption := d.Get("enable_blob_encryption").(bool)
 			opts.Encryption.Services.Blob = &storage.EncryptionService{
-				Enabled: utils.Bool(enableEncryption),
+				Enabled: pointer.FromBool(enableEncryption),
 			}
 
 			d.SetPartial("enable_blob_encryption")
@@ -448,7 +448,7 @@ func resourceArmStorageAccountRead(d *schema.ResourceData, meta interface{}) err
 	}
 
 	name := id.Path["storageaccounts"]
-	// https://github.com/hashicorp/terraform-provider-azurestack/issues/98
+	// https://github.com/terraform-providers/terraform-provider-azurestack/issues/98
 	// it appears the casing of the Resource ID's changed in Azure Stack version 1905
 	// as such we need to confirm both casings
 	if name == "" {
@@ -568,7 +568,7 @@ func resourceArmStorageAccountDelete(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 	name := id.Path["storageaccounts"]
-	// https://github.com/hashicorp/terraform-provider-azurestack/issues/98
+	// https://github.com/terraform-providers/terraform-provider-azurestack/issues/98
 	// it appears the casing of the Resource ID's changed in Azure Stack version 1905
 	// as such we need to confirm both casings
 	if name == "" {
@@ -588,7 +588,7 @@ func expandStorageAccountCustomDomain(d *schema.ResourceData) *storage.CustomDom
 	domains := d.Get("custom_domain").([]interface{})
 	if len(domains) == 0 {
 		return &storage.CustomDomain{
-			Name: utils.String(""),
+			Name: pointer.FromString(""),
 		}
 	}
 
@@ -596,8 +596,8 @@ func expandStorageAccountCustomDomain(d *schema.ResourceData) *storage.CustomDom
 	name := domain["name"].(string)
 	useSubDomain := domain["use_subdomain"].(bool)
 	return &storage.CustomDomain{
-		Name:             utils.String(name),
-		UseSubDomainName: utils.Bool(useSubDomain),
+		Name:             pointer.FromString(name),
+		UseSubDomainName: pointer.FromBool(useSubDomain),
 	}
 }
 
@@ -621,8 +621,10 @@ func validateArmStorageAccountName(v interface{}, k string) (ws []string, es []e
 }
 
 func validateArmStorageAccountType(v interface{}, k string) (ws []string, es []error) {
-	validAccountTypes := []string{"standard_lrs", "standard_zrs",
-		"standard_grs", "standard_ragrs", "premium_lrs"}
+	validAccountTypes := []string{
+		"standard_lrs", "standard_zrs",
+		"standard_grs", "standard_ragrs", "premium_lrs",
+	}
 
 	input := strings.ToLower(v.(string))
 

@@ -1,9 +1,8 @@
 package azurestack
 
 import (
-	"fmt"
-
 	"bytes"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
@@ -217,7 +216,7 @@ func dataSourceArmVirtualNetworkGatewayRead(d *schema.ResourceData, meta interfa
 		d.Set("enable_bgp", gw.EnableBgp)
 
 		// ActiveActive not yet supported on 2017-03-09 service
-		//d.Set("active_active", gw.ActiveActive)
+		// d.Set("active_active", gw.ActiveActive)
 
 		if string(gw.VpnType) != "" {
 			d.Set("vpn_type", string(gw.VpnType))

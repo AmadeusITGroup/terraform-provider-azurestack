@@ -1,7 +1,7 @@
 package azurestack
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" // nolint:gosec
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
@@ -73,7 +73,7 @@ func Provider() terraform.ResourceProvider {
 
 		DataSourcesMap: map[string]*schema.Resource{
 			"azurestack_client_config":           dataSourceArmClientConfig(),
-			networkInterfaceResourceName:         dataSourceArmNetworkInterface(),
+			"azurestack_network_interface":       dataSourceArmNetworkInterface(),
 			"azurestack_network_security_group":  dataSourceArmNetworkSecurityGroup(),
 			"azurestack_platform_image":          dataSourceArmPlatformImage(),
 			"azurestack_public_ip":               dataSourceArmPublicIP(),
@@ -101,7 +101,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_dns_zone":                                           resourceArmDnsZone(),
 			"azurestack_dns_a_record":                                       resourceArmDnsARecord(),
 			"azurestack_image":                                              resourceArmImage(),
-			networkInterfaceResourceName:                                    resourceArmNetworkInterface(),
+			"azurestack_network_interface":                                    resourceArmNetworkInterface(),
 			"azurestack_network_security_group":                             resourceArmNetworkSecurityGroup(),
 			"azurestack_network_security_rule":                              resourceArmNetworkSecurityRule(),
 			"azurestack_network_interface_backend_address_pool_association": resourceArmNetworkInterfaceBackendAddressPoolAssociation(),
@@ -124,7 +124,7 @@ func Provider() terraform.ResourceProvider {
 			"azurestack_template_deployment":                                resourceArmTemplateDeployment(),
 			"azurestack_virtual_network":                                    resourceArmVirtualNetwork(),
 			"azurestack_virtual_network_gateway":                            resourceArmVirtualNetworkGateway(),
-			virtualMachineResourceName:                                      resourceArmVirtualMachine(),
+			"azurestack_virtual_machine":                                      resourceArmVirtualMachine(),
 			"azurestack_virtual_machine_extension":                          resourceArmVirtualMachineExtensions(),
 			"azurestack_virtual_machine_data_disk_attachment":               resourceArmVirtualMachineDataDiskAttachment(),
 			"azurestack_virtual_network_gateway_connection":                 resourceArmVirtualNetworkGatewayConnection(),
@@ -232,7 +232,7 @@ func userDataStateFunc(v interface{}) string {
 	switch s := v.(type) {
 	case string:
 		s = base64Encode(s)
-		hash := sha1.Sum([]byte(s))
+		hash := sha1.Sum([]byte(s)) // nolint:gosec
 		return hex.EncodeToString(hash[:])
 	default:
 		return ""

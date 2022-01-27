@@ -87,20 +87,16 @@ func resourceArmStorageBlob() *schema.Resource {
 	}
 }
 
-func validateArmStorageBlobParallelism(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-
-	if value <= 0 {
+func validateArmStorageBlobParallelism(v interface{}, _ string) (ws []string, errors []error) {
+	if value := v.(int); value <= 0 {
 		errors = append(errors, fmt.Errorf("Blob Parallelism %q is invalid, must be greater than 0", value))
 	}
 
 	return
 }
 
-func validateArmStorageBlobAttempts(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-
-	if value <= 0 {
+func validateArmStorageBlobAttempts(v interface{}, _ string) (ws []string, errors []error) {
+	if value := v.(int); value <= 0 {
 		errors = append(errors, fmt.Errorf("Blob Attempts %q is invalid, must be greater than 0", value))
 	}
 
@@ -454,7 +450,7 @@ func resourceArmStorageBlobBlockSplit(file *os.File) ([]storage.Block, []resourc
 		return nil, nil, fmt.Errorf("stating source file %q: %s", file.Name(), err)
 	}
 
-	for i := int64(0); i < info.Size(); i = i + blockSize {
+	for i := int64(0); i < info.Size(); i += blockSize {
 		entropy := make([]byte, idSize)
 		_, err = rand.Read(entropy)
 		if err != nil {

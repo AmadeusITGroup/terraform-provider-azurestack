@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
+
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/azure"
 )
 
@@ -141,7 +142,7 @@ func resourceArmLoadBalancerProbeCreateUpdate(d *schema.ResourceData, meta inter
 	}
 
 	var createdProbeId string
-	for _, Probe := range *(*read.LoadBalancerPropertiesFormat).Probes {
+	for _, Probe := range *read.LoadBalancerPropertiesFormat.Probes {
 		if *Probe.Name == d.Get("name").(string) {
 			createdProbeId = *Probe.ID
 		}
@@ -235,9 +236,9 @@ func resourceArmLoadBalancerProbeDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	}
 
-	oldProbes := *loadBalancer.LoadBalancerPropertiesFormat.Probes
-	newProbes := append(oldProbes[:index], oldProbes[index+1:]...)
-	loadBalancer.LoadBalancerPropertiesFormat.Probes = &newProbes
+	probes := *loadBalancer.LoadBalancerPropertiesFormat.Probes
+	probes = append(probes[:index], probes[index+1:]...)
+	loadBalancer.LoadBalancerPropertiesFormat.Probes = &probes
 
 	resGroup, loadBalancerName, err := resourceGroupAndLBNameFromId(d.Get("loadbalancer_id").(string))
 	if err != nil {
@@ -268,9 +269,9 @@ func resourceArmLoadBalancerProbeDelete(d *schema.ResourceData, meta interface{}
 func expandAzureRmLoadBalancerProbe(d *schema.ResourceData) *network.Probe {
 
 	properties := network.ProbePropertiesFormat{
-		NumberOfProbes:    utils.Int32(int32(d.Get("number_of_probes").(int))),
-		IntervalInSeconds: utils.Int32(int32(d.Get("interval_in_seconds").(int))),
-		Port:              utils.Int32(int32(d.Get("port").(int))),
+		NumberOfProbes:    pointer.FromInt32(d.Get("number_of_probes").(int)),
+		IntervalInSeconds: pointer.FromInt32(d.Get("interval_in_seconds").(int)),
+		Port:              pointer.FromInt32(d.Get("port").(int)),
 	}
 
 	if v, ok := d.GetOk("protocol"); ok {
@@ -278,11 +279,11 @@ func expandAzureRmLoadBalancerProbe(d *schema.ResourceData) *network.Probe {
 	}
 
 	if v, ok := d.GetOk("request_path"); ok {
-		properties.RequestPath = utils.String(v.(string))
+		properties.RequestPath = pointer.FromString(v.(string))
 	}
 
 	return &network.Probe{
-		Name:                  utils.String(d.Get("name").(string)),
+		Name:                  pointer.FromString(d.Get("name").(string)),
 		ProbePropertiesFormat: &properties,
 	}
 }

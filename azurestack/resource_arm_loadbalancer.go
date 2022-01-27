@@ -10,10 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/suppress"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/validate"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/azure"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/suppress"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/validate"
 )
 
 func resourceArmLoadBalancer() *schema.Resource {
@@ -143,8 +143,8 @@ func resourceArmLoadBalancerCreate(d *schema.ResourceData, meta interface{}) err
 	}
 
 	loadBalancer := network.LoadBalancer{
-		Name:                         utils.String(name),
-		Location:                     utils.String(location),
+		Name:                         pointer.FromString(name),
+		Location:                     pointer.FromString(location),
 		Tags:                         *expandedTags,
 		LoadBalancerPropertiesFormat: &properties,
 	}

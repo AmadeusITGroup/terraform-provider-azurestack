@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/respons"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func TestAccAzureStackLocalNetworkGateway_basic(t *testing.T) {
@@ -205,6 +205,7 @@ func TestAccAzureStackLocalNetworkGateway_bgpSettingsComplete(t *testing.T) {
 // testCheckAzureStackLocalNetworkGatewayExists returns the resource.TestCheckFunc
 // which checks whether or not the expected local network gateway exists both
 // in the schema, and on Azure.
+// nolint:unparam
 func testCheckAzureStackLocalNetworkGatewayExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// first check within the schema for the local network gateway:
@@ -309,7 +310,7 @@ func testCheckAzureStackLocalNetworkGatewayDestroy(s *terraform.State) error {
 func testAccAzureStackLocalNetworkGatewayConfig_basic(rInt int, location string) string {
 	return fmt.Sprintf(`
 resource "azurestack_resource_group" "test" {
-  name     = "acctest-%d"
+  name     = "acctestRG-%d"
   location = "%s"
 }
 
@@ -326,7 +327,7 @@ resource "azurestack_local_network_gateway" "test" {
 func testAccAzureStackLocalNetworkGatewayConfig_tags(rInt int, location string) string {
 	return fmt.Sprintf(`
 resource "azurestack_resource_group" "test" {
-  name     = "acctest-%d"
+  name     = "acctestRG-%d"
   location = "%s"
 }
 
@@ -347,7 +348,7 @@ resource "azurestack_local_network_gateway" "test" {
 func testAccAzureStackLocalNetworkGatewayConfig_bgpSettings(rInt int, location string) string {
 	return fmt.Sprintf(`
 resource "azurestack_resource_group" "test" {
-  name     = "acctest-%d"
+  name     = "acctestRG-%d"
   location = "%s"
 }
 
@@ -369,7 +370,7 @@ resource "azurestack_local_network_gateway" "test" {
 func testAccAzureStackLocalNetworkGatewayConfig_bgpSettingsComplete(rInt int, location string) string {
 	return fmt.Sprintf(`
 resource "azurestack_resource_group" "test" {
-  name     = "acctest-%d"
+  name     = "acctestRG-%d"
   location = "%s"
 }
 

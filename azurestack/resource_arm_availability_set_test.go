@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/respons"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func TestAccAzureStackAvailabilitySet_basic(t *testing.T) {
@@ -153,6 +153,7 @@ func TestAccAzureStackAvailabilitySet_managed(t *testing.T) {
 	})
 }
 
+// nolint:unparam
 func testCheckAzureStackAvailabilitySetExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Ensure we have enough information in state to look up in API

@@ -172,10 +172,7 @@ func resourceArmNetworkSecurityGroupCreate(d *schema.ResourceData, meta interfac
 	resGroup := d.Get("resource_group_name").(string)
 	tags := d.Get("tags").(map[string]interface{})
 
-	sgRules, sgErr := expandAzureStackSecurityRules(d)
-	if sgErr != nil {
-		return fmt.Errorf("Building list of Network Security Group Rules: %+v", sgErr)
-	}
+	sgRules := expandAzureStackSecurityRules(d)
 
 	azureStackLockByName(name, networkSecurityGroupResourceName)
 	defer azureStackUnlockByName(name, networkSecurityGroupResourceName)
@@ -274,7 +271,7 @@ func resourceArmNetworkSecurityGroupDelete(d *schema.ResourceData, meta interfac
 	return err
 }
 
-func expandAzureStackSecurityRules(d *schema.ResourceData) ([]network.SecurityRule, error) {
+func expandAzureStackSecurityRules(d *schema.ResourceData) []network.SecurityRule {
 	sgRules := d.Get("security_rule").(*schema.Set).List()
 	rules := make([]network.SecurityRule, 0)
 

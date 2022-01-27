@@ -7,7 +7,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/network/mgmt/network"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 

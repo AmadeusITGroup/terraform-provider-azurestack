@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/respons"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
 func TestAccAzureStackVirtualNetworkGateway_basic(t *testing.T) {
@@ -187,8 +187,8 @@ func TestAccAzureStackVirtualNetworkGateway_vpnClientConfig(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testCheckAzureStackVirtualNetworkGatewayExists(resourceName),
 					resource.TestCheckResourceAttr(resourceName, "vpn_client_configuration.0.address_space.0", "10.2.0.0/24"),
-					//resource.TestCheckResourceAttr(resourceName, "vpn_client_configuration.0.radius_server_address", "1.2.3.4"),
-					//resource.TestCheckResourceAttr(resourceName, "vpn_client_configuration.0.vpn_client_protocols.#", "2"),
+					// resource.TestCheckResourceAttr(resourceName, "vpn_client_configuration.0.radius_server_address", "1.2.3.4"),
+					// resource.TestCheckResourceAttr(resourceName, "vpn_client_configuration.0.vpn_client_protocols.#", "2"),
 				),
 			},
 		},

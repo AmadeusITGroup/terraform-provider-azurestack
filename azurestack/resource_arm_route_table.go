@@ -9,8 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/helpers/azure"
-	"github.com/hashicorp/terraform-provider-azurerm/azurerm/utils"
+	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/pointer"
 	"github.com/hashicorp/terraform-provider-azurestack/azurestack/helpers/response"
 )
 
@@ -214,7 +213,7 @@ func expandRouteTableRoutes(d *schema.ResourceData) []network.Route {
 		route := network.Route{
 			Name: &name,
 			RoutePropertiesFormat: &network.RoutePropertiesFormat{
-				AddressPrefix: utils.String(data["address_prefix"].(string)),
+				AddressPrefix: pointer.FromString(data["address_prefix"].(string)),
 				NextHopType:   network.RouteNextHopType(data["next_hop_type"].(string)),
 			},
 		}
