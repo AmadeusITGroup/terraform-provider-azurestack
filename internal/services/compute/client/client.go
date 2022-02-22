@@ -16,6 +16,7 @@ type Client struct {
 	VMScaleSetVMsClient             *compute.VirtualMachineScaleSetVMsClient
 	VMClient                        *compute.VirtualMachinesClient
 	VMImageClient                   *compute.VirtualMachineImagesClient
+	ImageClient                     *compute.ImagesClient
 }
 
 func NewClient(o *common.ClientOptions) *Client {
@@ -63,5 +64,6 @@ func NewClient(o *common.ClientOptions) *Client {
 		VMScaleSetVMsClient:             &vmScaleSetVMsClient,
 		VMClient:                        &vmClient,
 		VMImageClient:                   &vmImageClient,
+		ImageClient:                     &imagesClient,
 	}
 }
