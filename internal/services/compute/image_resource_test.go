@@ -18,6 +18,8 @@ import (
 
 type ImageResource struct{}
 
+const SupportedImageResourceStorageTier = "Standard"
+
 func TestAccImage_standaloneImage(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurestack_image", "test")
 	r := ImageResource{}
@@ -25,63 +27,16 @@ func TestAccImage_standaloneImage(t *testing.T) {
 	data.ResourceTest(t, r, []acceptance.TestStep{
 		{
 			// need to create a vm and then reference it in the image creation
-			Config: r.setupUnmanagedDisks(data),
+			Config: r.setupUnmanagedDisks(data, "LRS", SupportedImageResourceStorageTier),
 			Check: acceptance.ComposeTestCheckFunc(
 				data.CheckWithClientForResource(r.virtualMachineExists, "azurestack_virtual_machine.testsource"),
 				data.CheckWithClientForResource(r.generalizeVirtualMachine(data), "azurestack_virtual_machine.testsource"),
 			),
 		},
 		{
-			Config: r.standaloneImageProvision(data, ""),
+			Config: r.standaloneImageProvision(data, "LRS", SupportedImageResourceStorageTier),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
-			),
-		},
-		data.ImportStep(),
-	})
-}
-
-func TestAccImage_standaloneImage_hyperVGeneration_V2(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurestack_image", "test")
-	r := ImageResource{}
-
-	data.ResourceTest(t, r, []acceptance.TestStep{
-		{
-			// need to create a vm and then reference it in the image creation
-			Config: r.setupUnmanagedDisks(data),
-			Check: acceptance.ComposeTestCheckFunc(
-				data.CheckWithClientForResource(r.virtualMachineExists, "azurestack_virtual_machine.testsource"),
-				data.CheckWithClientForResource(r.generalizeVirtualMachine(data), "azurestack_virtual_machine.testsource"),
-			),
-		},
-		{
-			Config: r.standaloneImageProvision(data, "V2"),
-			Check: acceptance.ComposeTestCheckFunc(
-				check.That(data.ResourceName).ExistsInAzure(r),
-			),
-		},
-		data.ImportStep(),
-	})
-}
-
-func TestAccImage_standaloneImageZoneRedundant(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurestack_image", "test")
-	r := ImageResource{}
-
-	data.ResourceTest(t, r, []acceptance.TestStep{
-		{
-			// need to create a vm and then reference it in the image creation
-			Config:  r.setupUnmanagedDisks(data),
-			Destroy: false,
-			Check: acceptance.ComposeTestCheckFunc(
-				data.CheckWithClientForResource(r.virtualMachineExists, "azurestack_virtual_machine.testsource"),
-				data.CheckWithClientForResource(r.generalizeVirtualMachine(data), "azurestack_virtual_machine.testsource"),
-			),
-		},
-		{
-			Config: r.standaloneImageProvision(data, ""),
-			Check: acceptance.ComposeTestCheckFunc(
-				check.That("azurestack_image.test").ExistsInAzure(r),
 			),
 		},
 		data.ImportStep(),
@@ -95,14 +50,14 @@ func TestAccImage_requiresImport(t *testing.T) {
 	data.ResourceTest(t, r, []acceptance.TestStep{
 		{
 			// need to create a vm and then reference it in the image creation
-			Config: r.setupUnmanagedDisks(data),
+			Config: r.setupUnmanagedDisks(data, "LRS", SupportedImageResourceStorageTier),
 			Check: acceptance.ComposeTestCheckFunc(
 				data.CheckWithClientForResource(r.virtualMachineExists, "azurestack_virtual_machine.testsource"),
 				data.CheckWithClientForResource(r.generalizeVirtualMachine(data), "azurestack_virtual_machine.testsource"),
 			),
 		},
 		{
-			Config: r.standaloneImageProvision(data, ""),
+			Config: r.standaloneImageProvision(data, "LRS", SupportedImageResourceStorageTier),
 			Check: acceptance.ComposeTestCheckFunc(
 				check.That(data.ResourceName).ExistsInAzure(r),
 			),
@@ -118,14 +73,14 @@ func TestAccImage_customImageFromVMWithUnmanagedDisks(t *testing.T) {
 	data.ResourceTest(t, r, []acceptance.TestStep{
 		{
 			// need to create a vm and then reference it in the image creation
-			Config: r.setupUnmanagedDisks(data),
+			Config: r.setupUnmanagedDisks(data, "LRS", SupportedImageResourceStorageTier),
 			Check: acceptance.ComposeTestCheckFunc(
 				data.CheckWithClientForResource(r.virtualMachineExists, "azurestack_virtual_machine.testsource"),
 				data.CheckWithClientForResource(r.generalizeVirtualMachine(data), "azurestack_virtual_machine.testsource"),
 			),
 		},
 		{
-			Config: r.customImageFromVMWithUnmanagedDisksProvision(data),
+			Config: r.customImageFromVMWithUnmanagedDisksProvision(data, SupportedImageResourceStorageTier),
 			Check: acceptance.ComposeTestCheckFunc(
 				data.CheckWithClientForResource(r.virtualMachineExists, "azurestack_virtual_machine.testdestination"),
 			),
@@ -163,7 +118,7 @@ func TestAccImage_customImageFromVMSSWithUnmanagedDisks(t *testing.T) {
 	data.ResourceTest(t, r, []acceptance.TestStep{
 		{
 			// need to create a vm and then reference it in the image creation
-			Config:  r.setupUnmanagedDisks(data),
+			Config:  r.setupUnmanagedDisks(data, "LRS", SupportedImageResourceStorageTier),
 			Destroy: false,
 			Check: acceptance.ComposeTestCheckFunc(
 				data.CheckWithClientForResource(r.virtualMachineExists, "azurestack_virtual_machine.testsource"),
@@ -171,7 +126,7 @@ func TestAccImage_customImageFromVMSSWithUnmanagedDisks(t *testing.T) {
 			),
 		},
 		{
-			Config: r.customImageFromVMSSWithUnmanagedDisksProvision(data),
+			Config: r.customImageFromVMSSWithUnmanagedDisksProvision(data, SupportedImageResourceStorageTier),
 			Check: acceptance.ComposeTestCheckFunc(
 				data.CheckWithClientForResource(r.virtualMachineScaleSetExists, "azurestack_virtual_machine_scale_set.testdestination"),
 			),
@@ -279,6 +234,7 @@ func (ImageResource) generalizeVirtualMachine(data acceptance.TestData) func(con
 		}
 
 		log.Printf("[DEBUG] Deallocating VM..")
+		// Upgrading to the 2021-07-01 exposed a new hibernate parameter in the GET method
 		future, err := client.Compute.VMClient.Deallocate(ctx, id.ResourceGroup, id.Name)
 		if err != nil {
 			return fmt.Errorf("Bad: deallocating vm: %+v", err)
@@ -321,6 +277,7 @@ func (ImageResource) virtualMachineScaleSetExists(ctx context.Context, client *c
 		return err
 	}
 
+	// Upgrading to the 2021-07-01 exposed a new expand parameter in the GET method
 	resp, err := client.Compute.VMScaleSetClient.Get(ctx, id.ResourceGroup, id.Name)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
@@ -360,7 +317,7 @@ resource "azurestack_virtual_machine" "testsource" {
   location              = azurestack_resource_group.test.location
   resource_group_name   = azurestack_resource_group.test.name
   network_interface_ids = [azurestack_network_interface.testsource.id]
-  vm_size               = "Standard_DS1_v2"
+  vm_size               = "Standard_D1_v2"
 
   storage_image_reference {
     publisher = "Canonical"
@@ -393,7 +350,7 @@ resource "azurestack_virtual_machine" "testsource" {
 `, template)
 }
 
-func (r ImageResource) setupUnmanagedDisks(data acceptance.TestData) string {
+func (r ImageResource) setupUnmanagedDisks(data acceptance.TestData, storageType string, storageTier string) string {
 	template := r.template(data)
 	return fmt.Sprintf(`
 provider "azurestack" {
@@ -415,13 +372,27 @@ resource "azurestack_network_interface" "testsource" {
   }
 }
 
+resource "azurestack_storage_account" "test" {
+  name                     = "accsa${local.random_string}"
+  resource_group_name      = azurestack_resource_group.test.name
+  location                 = azurestack_resource_group.test.location
+  account_tier             = "%s"
+  account_replication_type = "%s"
+}
+
+resource "azurestack_storage_container" "test" {
+  name                  = "vhds"
+  storage_account_name  = azurestack_storage_account.test.name
+  container_access_type = "blob"
+}
+
 # NOTE: using the legacy vm resource since this test requires an unmanaged disk
 resource "azurestack_virtual_machine" "testsource" {
   name                  = "testsource"
   location              = azurestack_resource_group.test.location
   resource_group_name   = azurestack_resource_group.test.name
   network_interface_ids = [azurestack_network_interface.testsource.id]
-  vm_size               = "Standard_DS1_v2"
+  vm_size               = "Standard_D1_v2"
 
   storage_image_reference {
     publisher = "Canonical"
@@ -432,6 +403,7 @@ resource "azurestack_virtual_machine" "testsource" {
 
   storage_os_disk {
     name          = "myosdisk1"
+    vhd_uri       = "${azurestack_storage_account.test.primary_blob_endpoint}${azurestack_storage_container.test.name}/myosdisk1.vhd"
     caching       = "ReadWrite"
     create_option = "FromImage"
     disk_size_gb  = "30"
@@ -452,16 +424,11 @@ resource "azurestack_virtual_machine" "testsource" {
     cost-center = "Ops"
   }
 }
-`, template)
+`, template, storageTier, storageType)
 }
 
-func (r ImageResource) standaloneImageProvision(data acceptance.TestData, hyperVGen string) string {
-	hyperVGenAtt := ""
-	if hyperVGen != "" {
-		hyperVGenAtt = fmt.Sprintf(`hyper_v_generation = "%s"`, hyperVGen)
-	}
-
-	template := r.setupUnmanagedDisks(data)
+func (r ImageResource) standaloneImageProvision(data acceptance.TestData, storageType string, storageTier string) string {
+	template := r.setupUnmanagedDisks(data, storageType, storageTier)
 	return fmt.Sprintf(`
 %s
 
@@ -470,12 +437,10 @@ resource "azurestack_image" "test" {
   location            = azurestack_resource_group.test.location
   resource_group_name = azurestack_resource_group.test.name
 
-  %s
-
   os_disk {
     os_type  = "Linux"
     os_state = "Generalized"
-    managed_disk_id = azurestack_virtual_machine.testsource.storage_os_disk[0].managed_disk_id
+    blob_uri = "${azurestack_storage_account.test.primary_blob_endpoint}${azurestack_storage_container.test.name}/myosdisk1.vhd"
     size_gb  = 30
     caching  = "None"
   }
@@ -485,11 +450,11 @@ resource "azurestack_image" "test" {
     cost-center = "Ops"
   }
 }
-`, template, hyperVGenAtt)
+`, template)
 }
 
 func (r ImageResource) standaloneImageRequiresImport(data acceptance.TestData) string {
-	template := r.standaloneImageProvision(data, "")
+	template := r.standaloneImageProvision(data, "LRS", SupportedImageResourceStorageTier)
 	return fmt.Sprintf(`
 %s
 
@@ -501,8 +466,8 @@ resource "azurestack_image" "import" {
   os_disk {
     os_type  = "Linux"
     os_state = "Generalized"
-	managed_disk_id = azurestack_virtual_machine.testsource.storage_os_disk[0].managed_disk_id
-	size_gb  = 30
+    blob_uri = "${azurestack_storage_account.test.primary_blob_endpoint}${azurestack_storage_container.test.name}/myosdisk1.vhd"
+    size_gb  = 30
     caching  = "None"
   }
 
@@ -514,20 +479,20 @@ resource "azurestack_image" "import" {
 `, template)
 }
 
-func (r ImageResource) customImageFromVMWithUnmanagedDisksProvision(data acceptance.TestData) string {
-	template := r.setupUnmanagedDisks(data)
+func (r ImageResource) customImageFromVMWithUnmanagedDisksProvision(data acceptance.TestData, storageTier string) string {
+	template := r.setupUnmanagedDisks(data, "LRS", storageTier)
 	return fmt.Sprintf(`
 %s
 
 resource "azurestack_image" "testdestination" {
-  name                = "accteste"
+  name                = "accteste-vm-unmng"
   location            = azurestack_resource_group.test.location
   resource_group_name = azurestack_resource_group.test.name
 
   os_disk {
     os_type  = "Linux"
     os_state = "Generalized"
-    managed_disk_id = azurestack_virtual_machine.testsource.storage_os_disk[0].managed_disk_id
+    blob_uri = "${azurestack_storage_account.test.primary_blob_endpoint}${azurestack_storage_container.test.name}/myosdisk1.vhd"
     size_gb  = 30
     caching  = "None"
   }
@@ -555,7 +520,7 @@ resource "azurestack_virtual_machine" "testdestination" {
   location              = azurestack_resource_group.test.location
   resource_group_name   = azurestack_resource_group.test.name
   network_interface_ids = [azurestack_network_interface.testdestination.id]
-  vm_size               = "Standard_DS1_v2"
+  vm_size               = "Standard_D1_v2"
 
   storage_image_reference {
     id = azurestack_image.testdestination.id
@@ -619,7 +584,7 @@ resource "azurestack_virtual_machine" "testdestination" {
   location              = azurestack_resource_group.test.location
   resource_group_name   = azurestack_resource_group.test.name
   network_interface_ids = [azurestack_network_interface.testdestination.id]
-  vm_size               = "Standard_DS1_v2"
+  vm_size               = "Standard_D1_v2"
 
   storage_image_reference {
     id = azurestack_image.testdestination.id
@@ -649,20 +614,20 @@ resource "azurestack_virtual_machine" "testdestination" {
 `, template)
 }
 
-func (r ImageResource) customImageFromVMSSWithUnmanagedDisksProvision(data acceptance.TestData) string {
-	template := r.setupUnmanagedDisks(data)
+func (r ImageResource) customImageFromVMSSWithUnmanagedDisksProvision(data acceptance.TestData, storageTier string) string {
+	template := r.setupUnmanagedDisks(data, "LRS", storageTier)
 	return fmt.Sprintf(`
 %s
 
 resource "azurestack_image" "testdestination" {
-  name                = "accteste"
+  name                = "accteste-vmss"
   location            = azurestack_resource_group.test.location
   resource_group_name = azurestack_resource_group.test.name
 
   os_disk {
     os_type  = "Linux"
     os_state = "Generalized"
-    managed_disk_id = azurestack_virtual_machine.testsource.storage_os_disk[0].managed_disk_id
+    blob_uri = "${azurestack_storage_account.test.primary_blob_endpoint}${azurestack_storage_container.test.name}/myosdisk1.vhd"
     size_gb  = 30
     caching  = "None"
   }
@@ -680,7 +645,7 @@ resource "azurestack_virtual_machine_scale_set" "testdestination" {
   upgrade_policy_mode = "Manual"
 
   sku {
-    name     = "Standard_DS1_v2"
+    name     = "Standard_D1_v2"
     tier     = "Standard"
     capacity = 2
   }
@@ -705,7 +670,7 @@ resource "azurestack_virtual_machine_scale_set" "testdestination" {
   storage_profile_os_disk {
     caching           = "ReadWrite"
     create_option     = "FromImage"
-    managed_disk_type = "Premium_LRS"
+    managed_disk_type = "Standard_LRS"
   }
 
   storage_profile_image_reference {
