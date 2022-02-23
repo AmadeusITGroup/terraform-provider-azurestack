@@ -193,14 +193,14 @@ func imageDataSourceRead(d *schema.ResourceData, meta interface{}) error {
 
 	if profile := img.StorageProfile; profile != nil {
 		if disk := profile.OsDisk; disk != nil {
-			if err := d.Set("os_disk", flattenAzureRmImageOSDisk(disk)); err != nil {
-				return fmt.Errorf("[DEBUG] Error setting AzureRM Image OS Disk error: %+v", err)
+			if err := d.Set("os_disk", flattenAzureImageOSDisk(disk)); err != nil {
+				return fmt.Errorf("[DEBUG] Error setting Azure Image OS Disk error: %+v", err)
 			}
 		}
 
 		if disks := profile.DataDisks; disks != nil {
-			if err := d.Set("data_disk", flattenAzureRmImageDataDisks(disks)); err != nil {
-				return fmt.Errorf("[DEBUG] Error setting AzureRM Image Data Disks error: %+v", err)
+			if err := d.Set("data_disk", flattenAzureImageDataDisks(disks)); err != nil {
+				return fmt.Errorf("[DEBUG] Error setting Azure Image Data Disks error: %+v", err)
 			}
 		}
 
