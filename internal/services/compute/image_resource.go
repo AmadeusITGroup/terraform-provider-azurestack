@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-provider-azurestack/internal/az/tags"
 	"github.com/hashicorp/terraform-provider-azurestack/internal/clients"
 	"github.com/hashicorp/terraform-provider-azurestack/internal/services/compute/parse"
+	"github.com/hashicorp/terraform-provider-azurestack/internal/services/compute/validate"
 	"github.com/hashicorp/terraform-provider-azurestack/internal/tf"
 	"github.com/hashicorp/terraform-provider-azurestack/internal/tf/pluginsdk"
 	"github.com/hashicorp/terraform-provider-azurestack/internal/tf/suppress"
@@ -50,13 +51,6 @@ func image() *pluginsdk.Resource {
 
 			"resource_group_name": commonschema.ResourceGroupName(),
 
-			"zone_resilient": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-				ForceNew: true,
-			},
-
 			"hyper_v_generation": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -71,7 +65,7 @@ func image() *pluginsdk.Resource {
 			"source_virtual_machine_id": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: resourceid.ValidateResourceID,
+				ValidateFunc: validate.VirtualMachineID,
 			},
 
 			"os_disk": {
@@ -196,10 +190,9 @@ func imageCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	ctx, cancel := timeouts.ForCreateUpdate(meta.(*clients.Client).StopContext, d)
 	defer cancel()
 
-	log.Printf("[INFO] preparing arguments for AzureRM Image creation.")
+	log.Printf("[INFO] preparing arguments for Azure Image creation.")
 
 	id := parse.NewImageID(subscriptionId, d.Get("resource_group_name").(string), d.Get("name").(string))
-	zoneResilient := d.Get("zone_resilient").(bool)
 	hyperVGeneration := d.Get("hyper_v_generation").(string)
 
 	if d.IsNewResource() {
@@ -211,7 +204,7 @@ func imageCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 
 		if !utils.ResponseWasNotFound(existing.Response) {
-			return tf.ImportAsExistsError("azurerm_image", id.ID())
+			return tf.ImportAsExistsError("azurestack_image", id.ID())
 		}
 	}
 
@@ -223,9 +216,8 @@ func imageCreateUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	storageProfile := compute.ImageStorageProfile{
-		OsDisk:        expandAzureRmImageOsDisk(d),
-		DataDisks:     expandAzureRmImageDataDisks(d),
-		ZoneResilient: utils.Bool(zoneResilient),
+		OsDisk:    expandAzureImageOsDisk(d),
+		DataDisks: expandAzureImageDataDisks(d),
 	}
 
 	sourceVM := compute.SubResource{}
@@ -284,7 +276,7 @@ func imageRead(d *pluginsdk.ResourceData, meta interface{}) error {
 			d.SetId("")
 			return nil
 		}
-		return fmt.Errorf("[ERROR] Error making Read request on AzureRM Image %q : %+v", id.String(), err)
+		return fmt.Errorf("[ERROR] Error making Read request on Azure Image %q : %+v", id.String(), err)
 	}
 
 	d.Set("name", id.Name)
@@ -298,17 +290,16 @@ func imageRead(d *pluginsdk.ResourceData, meta interface{}) error {
 		d.Set("source_virtual_machine_id", resp.SourceVirtualMachine.ID)
 	} else if resp.StorageProfile != nil {
 		if disk := resp.StorageProfile.OsDisk; disk != nil {
-			if err := d.Set("os_disk", flattenAzureRmImageOSDisk(disk)); err != nil {
-				return fmt.Errorf("[DEBUG] Error setting AzureRM Image OS Disk error: %+v", err)
+			if err := d.Set("os_disk", flattenAzureImageOSDisk(disk)); err != nil {
+				return fmt.Errorf("[DEBUG] Error setting Azure Image OS Disk error: %+v", err)
 			}
 		}
 
 		if disks := resp.StorageProfile.DataDisks; disks != nil {
-			if err := d.Set("data_disk", flattenAzureRmImageDataDisks(disks)); err != nil {
-				return fmt.Errorf("[DEBUG] Error setting AzureRM Image Data Disks error: %+v", err)
+			if err := d.Set("data_disk", flattenAzureImageDataDisks(disks)); err != nil {
+				return fmt.Errorf("[DEBUG] Error setting Azure Image Data Disks error: %+v", err)
 			}
 		}
-		d.Set("zone_resilient", resp.StorageProfile.ZoneResilient)
 	}
 	d.Set("hyper_v_generation", string(resp.HyperVGeneration))
 
@@ -333,7 +324,7 @@ func imageDelete(d *pluginsdk.ResourceData, meta interface{}) error {
 	return future.WaitForCompletionRef(ctx, client.Client)
 }
 
-func flattenAzureRmImageOSDisk(osDisk *compute.ImageOSDisk) []interface{} {
+func flattenAzureImageOSDisk(osDisk *compute.ImageOSDisk) []interface{} {
 	result := make(map[string]interface{})
 
 	if disk := osDisk; disk != nil {
@@ -354,7 +345,7 @@ func flattenAzureRmImageOSDisk(osDisk *compute.ImageOSDisk) []interface{} {
 	return []interface{}{result}
 }
 
-func flattenAzureRmImageDataDisks(diskImages *[]compute.ImageDataDisk) []interface{} {
+func flattenAzureImageDataDisks(diskImages *[]compute.ImageDataDisk) []interface{} {
 	result := make([]interface{}, 0)
 
 	if images := diskImages; images != nil {
@@ -381,7 +372,7 @@ func flattenAzureRmImageDataDisks(diskImages *[]compute.ImageDataDisk) []interfa
 	return result
 }
 
-func expandAzureRmImageOsDisk(d *pluginsdk.ResourceData) *compute.ImageOSDisk {
+func expandAzureImageOsDisk(d *pluginsdk.ResourceData) *compute.ImageOSDisk {
 	osDisk := &compute.ImageOSDisk{}
 	disks := d.Get("os_disk").([]interface{})
 
@@ -422,7 +413,7 @@ func expandAzureRmImageOsDisk(d *pluginsdk.ResourceData) *compute.ImageOSDisk {
 	return osDisk
 }
 
-func expandAzureRmImageDataDisks(d *pluginsdk.ResourceData) *[]compute.ImageDataDisk {
+func expandAzureImageDataDisks(d *pluginsdk.ResourceData) *[]compute.ImageDataDisk {
 	disks := d.Get("data_disk").([]interface{})
 
 	dataDisks := make([]compute.ImageDataDisk, 0, len(disks))
